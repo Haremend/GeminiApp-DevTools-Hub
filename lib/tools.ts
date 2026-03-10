@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'Utilities';
 
@@ -19,6 +19,14 @@ export const tools: Tool[] = [
     category: 'Design',
     icon: Palette,
     path: '/tools/color-picker',
+  },
+  {
+    id: 'image-color-picker',
+    name: 'Image Color Picker',
+    description: 'Upload an image and pick colors directly from it with zoom and pan support.',
+    category: 'Design',
+    icon: ImageIcon,
+    path: '/tools/image-color-picker',
   },
   {
     id: 'yaml-formatter',
