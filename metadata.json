@@ -1,0 +1,5 @@
+{
+  "name": "DevTools Hub",
+  "description": "A collection of useful developer tools including Color Picker and YAML Formatter.",
+  "requestFramePermissions": []
+}
