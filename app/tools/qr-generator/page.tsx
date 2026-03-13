@@ -16,6 +16,7 @@ export default function QrGeneratorTool() {
   const [excavate, setExcavate] = useState(true);
 
   const [textPosition, setTextPosition] = useState<'none' | 'top' | 'bottom'>('none');
+  const [labelText, setLabelText] = useState('');
   const [textColor, setTextColor] = useState('#000000');
   const [fontSize, setFontSize] = useState(16);
 
@@ -40,7 +41,7 @@ export default function QrGeneratorTool() {
     const canvas = qrRef.current?.querySelector('canvas');
     if (!canvas) return;
 
-    if (textPosition === 'none' || !value.trim()) {
+    if (textPosition === 'none' || !labelText.trim()) {
       // Standard download
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
@@ -55,7 +56,7 @@ export default function QrGeneratorTool() {
     // Download with text
     const padding = 20;
     const lineHeight = fontSize * 1.5;
-    const text = value.trim();
+    const text = labelText.trim();
 
     const tempCanvas = document.createElement('canvas');
     const tCtx = tempCanvas.getContext('2d');
@@ -222,6 +223,16 @@ export default function QrGeneratorTool() {
               <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                 <Type className="w-4 h-4 mr-2" /> Text Label (On Export)
               </h3>
+              <div className="mb-4">
+                <label className="block text-xs text-gray-500 mb-1">Label Text</label>
+                <input
+                  type="text"
+                  value={labelText}
+                  onChange={(e) => setLabelText(e.target.value)}
+                  placeholder="Enter text to display..."
+                  className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Position</label>
@@ -346,12 +357,12 @@ export default function QrGeneratorTool() {
               className="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-inner flex flex-col items-center justify-center mb-6 w-full"
               style={{ backgroundColor: bgColor }}
             >
-              {textPosition === 'top' && value.trim() && (
+              {textPosition === 'top' && labelText.trim() && (
                 <div 
                   className="mb-4 text-center break-all whitespace-pre-wrap" 
                   style={{ color: textColor, fontSize: `${fontSize}px` }}
                 >
-                  {value}
+                  {labelText}
                 </div>
               )}
               
@@ -373,12 +384,12 @@ export default function QrGeneratorTool() {
                 />
               </div>
 
-              {textPosition === 'bottom' && value.trim() && (
+              {textPosition === 'bottom' && labelText.trim() && (
                 <div 
                   className="mt-4 text-center break-all whitespace-pre-wrap" 
                   style={{ color: textColor, fontSize: `${fontSize}px` }}
                 >
-                  {value}
+                  {labelText}
                 </div>
               )}
             </div>

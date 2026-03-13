@@ -1,6 +1,6 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus } from 'lucide-react';
 
-export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code' | 'Cryptography';
+export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code' | 'Image Processing';
 
 export interface Tool {
   id: string;
@@ -40,9 +40,17 @@ export const tools: Tool[] = [
     id: 'crypto-toolkit',
     name: 'Crypto Toolkit',
     description: 'Encrypt, decrypt, and hash data using MD5, Base64, AES, SM2, SM3, SM4, and more.',
-    category: 'Cryptography',
+    category: 'Development',
     icon: Shield,
     path: '/tools/crypto-toolkit',
+  },
+  {
+    id: 'image-editor',
+    name: 'Image Editor',
+    description: 'Annotate images with arrows, text, freehand drawing, mosaic, and cropping.',
+    category: 'Image Processing',
+    icon: ImagePlus,
+    path: '/tools/image-editor',
   },
   {
     id: 'qr-generator',
