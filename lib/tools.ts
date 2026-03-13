@@ -1,6 +1,6 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield } from 'lucide-react';
 
-export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code';
+export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code' | 'Cryptography';
 
 export interface Tool {
   id: string;
@@ -35,6 +35,14 @@ export const tools: Tool[] = [
     category: 'Development',
     icon: FileCode2,
     path: '/tools/yaml-formatter',
+  },
+  {
+    id: 'crypto-toolkit',
+    name: 'Crypto Toolkit',
+    description: 'Encrypt, decrypt, and hash data using MD5, Base64, AES, SM2, SM3, SM4, and more.',
+    category: 'Cryptography',
+    icon: Shield,
+    path: '/tools/crypto-toolkit',
   },
   {
     id: 'qr-generator',

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { Download, Upload, Trash2, Settings2 } from 'lucide-react';
+import { Download, Upload, Trash2, Settings2, Type } from 'lucide-react';
 
 export default function QrGeneratorTool() {
   const [value, setValue] = useState('https://example.com');
@@ -14,6 +14,10 @@ export default function QrGeneratorTool() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoSize, setLogoSize] = useState(24);
   const [excavate, setExcavate] = useState(true);
+
+  const [textPosition, setTextPosition] = useState<'none' | 'top' | 'bottom'>('none');
+  const [textColor, setTextColor] = useState('#000000');
+  const [fontSize, setFontSize] = useState(16);
 
   const qrRef = useRef<HTMLDivElement>(null);
 
@@ -35,11 +39,81 @@ export default function QrGeneratorTool() {
   const downloadQR = () => {
     const canvas = qrRef.current?.querySelector('canvas');
     if (!canvas) return;
+
+    if (textPosition === 'none' || !value.trim()) {
+      // Standard download
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'qrcode.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
+
+    // Download with text
+    const padding = 20;
+    const lineHeight = fontSize * 1.5;
+    const text = value.trim();
+
+    const tempCanvas = document.createElement('canvas');
+    const tCtx = tempCanvas.getContext('2d');
+    if (!tCtx) return;
+
+    tCtx.font = `${fontSize}px sans-serif`;
+    const maxWidth = canvas.width;
+    const lines: string[] = [];
+    const paragraphs = text.split('\n');
+
+    paragraphs.forEach(p => {
+      let currentLine = '';
+      for (let i = 0; i < p.length; i++) {
+        const char = p[i];
+        const testLine = currentLine + char;
+        const metrics = tCtx.measureText(testLine);
+        if (metrics.width > maxWidth && i > 0) {
+          lines.push(currentLine);
+          currentLine = char;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      lines.push(currentLine);
+    });
+
+    const textHeight = lines.length * lineHeight;
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = canvas.width + padding * 2;
+    finalCanvas.height = canvas.height + padding * 2 + textHeight + padding;
+
+    const ctx = finalCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // Fill background
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+    const qrY = textPosition === 'top' ? padding * 2 + textHeight : padding;
+    const textY = textPosition === 'top' ? padding + fontSize : padding * 2 + canvas.height + fontSize;
+
+    // Draw QR Code
+    ctx.drawImage(canvas, padding, qrY);
+
+    // Draw Text
+    ctx.fillStyle = textColor;
+    ctx.font = `${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     
-    const url = canvas.toDataURL('image/png');
+    lines.forEach((line, index) => {
+      ctx.fillText(line, finalCanvas.width / 2, textY + index * lineHeight);
+    });
+
+    const url = finalCanvas.toDataURL('image/png');
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'qrcode.png';
+    a.download = 'qrcode-with-text.png';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -143,6 +217,64 @@ export default function QrGeneratorTool() {
               </div>
             </div>
 
+            {/* Text Label Settings */}
+            <div className="pt-4 border-t border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                <Type className="w-4 h-4 mr-2" /> Text Label (On Export)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Position</label>
+                  <select
+                    value={textPosition}
+                    onChange={(e) => setTextPosition(e.target.value as any)}
+                    className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="none">None</option>
+                    <option value="top">Top</option>
+                    <option value="bottom">Bottom</option>
+                  </select>
+                </div>
+                {textPosition !== 'none' && (
+                  <>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Text Color</label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="color"
+                          value={textColor}
+                          onChange={(e) => setTextColor(e.target.value)}
+                          className="h-8 w-8 rounded cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={textColor}
+                          onChange={(e) => setTextColor(e.target.value)}
+                          className="flex-1 p-2 text-sm border border-gray-300 rounded-lg font-mono uppercase"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Font Size: {fontSize}px</label>
+                      <input 
+                        type="range" 
+                        min="10" 
+                        max="40" 
+                        value={fontSize} 
+                        onChange={(e) => setFontSize(Number(e.target.value))}
+                        className="w-full mt-2"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              {textPosition !== 'none' && (
+                <p className="text-xs text-gray-500 mt-2">
+                  * Text will be wrapped automatically and added to the downloaded image.
+                </p>
+              )}
+            </div>
+
             {/* Logo Upload */}
             <div className="pt-4 border-t border-gray-100">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Center Logo (Optional)</h3>
@@ -211,24 +343,44 @@ export default function QrGeneratorTool() {
             <h2 className="text-lg font-semibold text-gray-900 mb-6 w-full text-center">Preview</h2>
             
             <div 
-              className="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-inner flex items-center justify-center mb-6 w-full"
-              ref={qrRef}
+              className="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-inner flex flex-col items-center justify-center mb-6 w-full"
+              style={{ backgroundColor: bgColor }}
             >
-              <QRCodeCanvas
-                value={value || ' '}
-                size={256}
-                bgColor={bgColor}
-                fgColor={fgColor}
-                level={level}
-                includeMargin={includeMargin}
-                imageSettings={logoUrl ? {
-                  src: logoUrl,
-                  height: 256 * (logoSize / 100),
-                  width: 256 * (logoSize / 100),
-                  excavate: excavate,
-                } : undefined}
-                className="max-w-full h-auto shadow-sm rounded-sm"
-              />
+              {textPosition === 'top' && value.trim() && (
+                <div 
+                  className="mb-4 text-center break-all whitespace-pre-wrap" 
+                  style={{ color: textColor, fontSize: `${fontSize}px` }}
+                >
+                  {value}
+                </div>
+              )}
+              
+              <div ref={qrRef}>
+                <QRCodeCanvas
+                  value={value || ' '}
+                  size={256}
+                  bgColor={bgColor}
+                  fgColor={fgColor}
+                  level={level}
+                  includeMargin={includeMargin}
+                  imageSettings={logoUrl ? {
+                    src: logoUrl,
+                    height: 256 * (logoSize / 100),
+                    width: 256 * (logoSize / 100),
+                    excavate: excavate,
+                  } : undefined}
+                  className="max-w-full h-auto shadow-sm rounded-sm"
+                />
+              </div>
+
+              {textPosition === 'bottom' && value.trim() && (
+                <div 
+                  className="mt-4 text-center break-all whitespace-pre-wrap" 
+                  style={{ color: textColor, fontSize: `${fontSize}px` }}
+                >
+                  {value}
+                </div>
+              )}
             </div>
 
             <button
