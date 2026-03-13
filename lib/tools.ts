@@ -1,6 +1,6 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText } from 'lucide-react';
 
-export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code' | 'Image Processing';
+export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code' | 'Image Processing' | 'Text';
 
 export interface Tool {
   id: string;
@@ -12,6 +12,14 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
+  {
+    id: 'markdown-editor',
+    name: 'Markdown Editor',
+    description: 'A real-time Markdown editor with live preview, toolbar, and GitHub Flavored Markdown support.',
+    category: 'Text',
+    icon: FileText,
+    path: '/tools/markdown-editor',
+  },
   {
     id: 'color-picker',
     name: 'Color Picker',
