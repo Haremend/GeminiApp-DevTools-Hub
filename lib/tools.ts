@@ -1,6 +1,6 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine } from 'lucide-react';
 
-export type Category = 'Design' | 'Development' | 'Utilities';
+export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code';
 
 export interface Tool {
   id: string;
@@ -35,6 +35,22 @@ export const tools: Tool[] = [
     category: 'Development',
     icon: FileCode2,
     path: '/tools/yaml-formatter',
+  },
+  {
+    id: 'qr-generator',
+    name: 'QR Code Generator',
+    description: 'Generate customizable QR codes with colors, logos, and different error correction levels.',
+    category: 'QR Code',
+    icon: QrCode,
+    path: '/tools/qr-generator',
+  },
+  {
+    id: 'qr-scanner',
+    name: 'QR Code Scanner',
+    description: 'Decode QR codes by uploading an image or scanning directly with your camera.',
+    category: 'QR Code',
+    icon: ScanLine,
+    path: '/tools/qr-scanner',
   },
 ];
 
