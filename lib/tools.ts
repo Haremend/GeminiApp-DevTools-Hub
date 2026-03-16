@@ -13,6 +13,14 @@ export interface Tool {
 
 export const tools: Tool[] = [
   {
+    id: 'template-replacer',
+    name: 'Template Replacer',
+    description: 'Generate multiple text blocks by injecting data rows into a template. Great for generating SQL inserts from spreadsheet data.',
+    category: 'Development',
+    icon: FileCode2,
+    path: '/tools/template-replacer',
+  },
+  {
     id: 'text-merger',
     name: 'Text Merger',
     description: 'Merge multi-line text into a single line, and optionally break it into new lines based on specific symbols.',
