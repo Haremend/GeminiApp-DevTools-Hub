@@ -7,6 +7,7 @@ export default function TextMergerPage() {
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
   const [delimiters, setDelimiters] = useState('');
+  const [replaceWith, setReplaceWith] = useState('');
   const [copied, setCopied] = useState(false);
   const [mergeWithSpace, setMergeWithSpace] = useState(false);
 
@@ -17,9 +18,27 @@ export default function TextMergerPage() {
     }
 
     // 1. Merge all lines into one
-    // Replace carriage returns and newlines with either a space or empty string
-    const mergeChar = mergeWithSpace ? ' ' : '';
-    let processed = inputText.replace(/[\r\n]+/g, mergeChar);
+    const lines = inputText.split(/[\r\n]+/).map(l => l.trim()).filter(l => l.length > 0);
+    let processed = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      if (i < lines.length - 1) {
+        let separator = '';
+        if (replaceWith) {
+          if (line.endsWith(replaceWith)) {
+            separator = mergeWithSpace ? ' ' : '';
+          } else {
+            separator = replaceWith + (mergeWithSpace ? ' ' : '');
+          }
+        } else {
+          separator = mergeWithSpace ? ' ' : '';
+        }
+        processed += line + separator;
+      } else {
+        processed += line;
+      }
+    }
 
     // 2. If delimiters are provided, insert line breaks after them
     if (delimiters.trim()) {
@@ -74,9 +93,21 @@ export default function TextMergerPage() {
 
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 mb-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex-1 w-full flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <div className="w-full sm:w-auto flex-1 max-w-md">
+          <div className="w-full sm:w-auto flex-1 max-w-xs">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Line Break Symbols (separated by space, optional)
+              Replace Line Breaks With
+            </label>
+            <input
+              type="text"
+              value={replaceWith}
+              onChange={(e) => setReplaceWith(e.target.value)}
+              placeholder="e.g., ,"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+            />
+          </div>
+          <div className="w-full sm:w-auto flex-1 max-w-xs">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Break Lines At
             </label>
             <input
               type="text"
