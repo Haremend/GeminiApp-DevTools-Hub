@@ -16,6 +16,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
+    "js-beautify": "^1.15.4",
     "js-yaml": "^4.1.1",
     "jsqr": "^1.4.0",
     "lucide-react": "^0.553.0",

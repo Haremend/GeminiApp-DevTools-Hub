@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -12,6 +12,14 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
+  {
+    id: 'comment-remover',
+    name: 'Comment Remover',
+    description: 'Remove all comments and empty lines from your code (Java, Python, HTML, JS) and automatically format it.',
+    category: 'Development',
+    icon: Eraser,
+    path: '/tools/comment-remover',
+  },
   {
     id: 'template-replacer',
     name: 'Template Replacer',
