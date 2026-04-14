@@ -43,6 +43,7 @@
     "@types/js-beautify": "^1.14.3",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20",
+    "@types/plantuml-encoder": "^1.4.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "9.39.1",
