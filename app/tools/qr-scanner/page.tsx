@@ -85,10 +85,7 @@ export default function QrScannerTool() {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
+  const processImageFile = (file: File) => {
     setError(null);
     setResult(null);
     
@@ -99,6 +96,7 @@ export default function QrScannerTool() {
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         setError('Failed to process image.');
+        URL.revokeObjectURL(url);
         return;
       }
       
@@ -123,8 +121,40 @@ export default function QrScannerTool() {
       URL.revokeObjectURL(url);
     };
     img.src = url;
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    processImageFile(file);
     e.target.value = '';
   };
+
+  // Handle paste events globally
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (mode !== 'upload') return; // Only process paste in upload mode
+      
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            processImageFile(file);
+          }
+          break; // Process the first image found
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [mode]);
 
   const copyToClipboard = () => {
     if (!result) return;
@@ -175,7 +205,7 @@ export default function QrScannerTool() {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                <p className="text-gray-600 font-medium">Click or drag image to upload</p>
+                <p className="text-gray-600 font-medium">Click, drag, or paste image to upload</p>
                 <p className="text-sm text-gray-500 mt-1">Supports PNG, JPG, WEBP</p>
               </div>
             ) : (
