@@ -23,7 +23,7 @@ export default function TextDiffPage() {
   };
 
   const renderDiff = () => {
-    let diffResult = [];
+    let diffResult: Diff.Change[] = [];
 
     if (diffMode === 'chars') {
       diffResult = Diff.diffChars(originalText, modifiedText);
