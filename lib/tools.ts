@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -12,6 +12,14 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
+  {
+    id: 'text-diff',
+    name: 'Text Diff',
+    description: 'Compare two texts and see the highlighted differences (added and removed words/lines).',
+    category: 'Text',
+    icon: GitCompare,
+    path: '/tools/text-diff',
+  },
   {
     id: 'code-formatter',
     name: 'Code Formatter',
