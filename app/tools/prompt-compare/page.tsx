@@ -256,7 +256,6 @@ export default function PromptComparePage() {
                   <Layers className="w-5 h-5" />
                   Base Prompt (Common Tags)
                 </span>
-                <p className="text-sm text-indigo-600 mt-1">Tags present in all interconnected prompts.</p>
               </div>
             </div>
             <div className="p-4 font-mono text-xs leading-snug text-gray-800 bg-white min-h-[4rem] whitespace-pre-wrap break-words">
@@ -268,20 +267,17 @@ export default function PromptComparePage() {
           <div>
             <div className="mb-3 px-1">
               <h3 className="font-semibold text-gray-800 text-lg">Unique Tags</h3>
-              <p className="text-sm text-gray-500">Tags exclusively added in this version (compared to the base).</p>
             </div>
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {result?.diffs.map((diff, index) => (
-                <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
-                    <div>
-                      <span className="font-medium text-sm text-gray-800 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-500 inline-block shadow-sm"></span>
-                        {diff.name}
-                      </span>
-                    </div>
+                <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 shrink-0">
+                    <span className="font-medium text-sm text-gray-800 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-500 inline-block shadow-sm"></span>
+                      {diff.name}
+                    </span>
                   </div>
-                  <div className="p-4 font-mono text-xs leading-snug text-gray-800 bg-white min-h-[3rem] whitespace-pre-wrap break-words">
+                  <div className="flex-1 p-4 font-mono text-xs leading-snug text-gray-800 bg-white whitespace-pre-wrap break-words overflow-auto">
                     {diff.text || <span className="text-gray-400 italic font-sans text-xs">No unique tags found. (Identical to base prompt)</span>}
                   </div>
                 </div>
