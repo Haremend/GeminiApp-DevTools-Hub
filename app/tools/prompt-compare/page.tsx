@@ -224,7 +224,7 @@ export default function PromptComparePage() {
           </div>
         </div>
       ) : (
-        <div className="max-w-5xl mx-auto space-y-8 w-full pb-20">
+        <div className="max-w-5xl mx-auto space-y-6 w-full pb-20">
           <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
             <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
               <span className="w-2 h-6 bg-indigo-600 rounded-full inline-block"></span>
@@ -250,7 +250,7 @@ export default function PromptComparePage() {
 
           {/* Base Prompt */}
           <div className="bg-white rounded-2xl shadow-sm border border-indigo-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-indigo-50 to-white px-6 py-4 border-b border-indigo-100 flex justify-between items-center">
+            <div className="bg-gradient-to-r from-indigo-50 to-white px-4 py-3 border-b border-indigo-100 flex justify-between items-center">
               <div>
                 <span className="font-semibold text-base text-indigo-900 flex items-center gap-2">
                   <Layers className="w-5 h-5" />
@@ -259,29 +259,34 @@ export default function PromptComparePage() {
                 <p className="text-sm text-indigo-600 mt-1">Tags present in all interconnected prompts.</p>
               </div>
             </div>
-            <div className="p-6 font-mono text-sm leading-snug text-gray-800 bg-white min-h-[6rem] whitespace-pre-wrap break-words">
+            <div className="p-4 font-mono text-xs leading-snug text-gray-800 bg-white min-h-[4rem] whitespace-pre-wrap break-words">
               {result?.base || <span className="text-gray-400 italic">No common tags found across all inputs.</span>}
             </div>
           </div>
 
           {/* Differences */}
-          <div className="grid grid-cols-1 gap-6">
-            {result?.diffs.map((diff, index) => (
-              <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                  <div>
-                    <span className="font-semibold text-base text-gray-800 flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block shadow-sm"></span>
-                      {diff.name} Unique Tags
-                    </span>
-                    <p className="text-sm text-gray-500 mt-1">Tags exclusively added in this version (compared to the base).</p>
+          <div>
+            <div className="mb-3 px-1">
+              <h3 className="font-semibold text-gray-800 text-lg">Unique Tags</h3>
+              <p className="text-sm text-gray-500">Tags exclusively added in this version (compared to the base).</p>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              {result?.diffs.map((diff, index) => (
+                <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                      <span className="font-medium text-sm text-gray-800 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-green-500 inline-block shadow-sm"></span>
+                        {diff.name}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-4 font-mono text-xs leading-snug text-gray-800 bg-white min-h-[3rem] whitespace-pre-wrap break-words">
+                    {diff.text || <span className="text-gray-400 italic font-sans text-xs">No unique tags found. (Identical to base prompt)</span>}
                   </div>
                 </div>
-                <div className="p-6 font-mono text-sm leading-snug text-gray-800 bg-white min-h-[5rem] whitespace-pre-wrap break-words">
-                  {diff.text || <span className="text-gray-400 italic font-sans text-sm">No unique tags found. (Identical to base prompt)</span>}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
