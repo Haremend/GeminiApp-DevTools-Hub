@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -12,6 +12,14 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
+  {
+    id: 'prompt-compare',
+    name: 'Prompt Compare',
+    description: 'Compare multiple comma-separated prompts (e.g. Midjourney tags), extract common base tags, and show unique differences.',
+    category: 'Text',
+    icon: Layers,
+    path: '/tools/prompt-compare',
+  },
   {
     id: 'text-diff',
     name: 'Text Diff',
