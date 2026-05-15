@@ -10,6 +10,7 @@ export default function CodeFormatterPage() {
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
   const [language, setLanguage] = useState<Language>('javascript');
+  const [removeEmptyLines, setRemoveEmptyLines] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleFormat = () => {
@@ -18,13 +19,19 @@ export default function CodeFormatterPage() {
       return;
     }
 
-    let formatted = inputText;
+    let textToFormat = inputText;
+    if (removeEmptyLines) {
+      // Remove all empty lines, leaving only lines with actual content
+      textToFormat = textToFormat.replace(/^\s*[\r\n]/gm, '');
+    }
+
+    let formatted = textToFormat;
     try {
       const options = { 
         indent_size: 2, 
         space_in_empty_paren: true,
-        preserve_newlines: true,
-        max_preserve_newlines: 2,
+        preserve_newlines: !removeEmptyLines,
+        max_preserve_newlines: removeEmptyLines ? 0 : 2,
         wrap_line_length: 120
       };
       
@@ -32,18 +39,18 @@ export default function CodeFormatterPage() {
         case 'javascript':
         case 'java':
         case 'json':
-          formatted = beautify.js(inputText, options);
+          formatted = beautify.js(textToFormat, options);
           break;
         case 'html':
         case 'vue':
-          formatted = beautify.html(inputText, {
+          formatted = beautify.html(textToFormat, {
             ...options,
             indent_inner_html: true,
             extra_liners: ['head', 'body', '/html', 'script', 'style']
           });
           break;
         case 'css':
-          formatted = beautify.css(inputText, options);
+          formatted = beautify.css(textToFormat, options);
           break;
       }
     } catch (e) {
@@ -95,7 +102,7 @@ export default function CodeFormatterPage() {
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as Language)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none bg-white"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none bg-white font-medium text-sm text-gray-700"
               >
                 <option value="javascript">JavaScript / TypeScript</option>
                 <option value="java">Java</option>
@@ -105,6 +112,23 @@ export default function CodeFormatterPage() {
                 <option value="json">JSON</option>
               </select>
             </div>
+          </div>
+          
+          <div className="flex items-center sm:mt-6 mt-1">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <div className="relative flex items-center justify-center">
+                <input
+                  type="checkbox"
+                  checked={removeEmptyLines}
+                  onChange={(e) => setRemoveEmptyLines(e.target.checked)}
+                  className="peer appearance-none w-5 h-5 border-2 border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:outline-none checked:bg-indigo-600 checked:border-indigo-600 transition-all cursor-pointer"
+                />
+                <Check className="w-3.5 h-3.5 text-white absolute pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" />
+              </div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors select-none">
+                Remove empty lines <span className="text-gray-400 font-normal ml-1">(清除空行)</span>
+              </span>
+            </label>
           </div>
         </div>
 
