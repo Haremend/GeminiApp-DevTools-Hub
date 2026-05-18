@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Layers, Plus, GitCompare, Download, ArrowLeft, Trash2, X } from 'lucide-react';
+import { Layers, Plus, GitCompare, Download, ArrowLeft, Trash2, X, SplitSquareHorizontal } from 'lucide-react';
 
 interface PromptInput {
   id: number;
@@ -48,11 +48,12 @@ export default function PromptComparePage() {
   const canCompare = validPrompts.length >= 2;
   const canAdd = prompts.length > 0 && prompts[prompts.length - 1].text.trim() !== '';
 
-  const processPrompts = () => {
-    if (validPrompts.length < 2) return;
+  const performCompare = (promptsList: PromptInput[]) => {
+    const validPromptsToCompare = promptsList.filter(p => p.text.trim() !== '');
+    if (validPromptsToCompare.length < 2) return;
 
-    const N = validPrompts.length;
-    const parsedPrompts = validPrompts.map(prompt => {
+    const N = validPromptsToCompare.length;
+    const parsedPrompts = validPromptsToCompare.map(prompt => {
       const lines = prompt.text.split('\n');
       const parsedLines = lines.map(line => {
         const raw = line.trim();
@@ -117,6 +118,30 @@ export default function PromptComparePage() {
       diffs: diffs
     });
     setIsComparing(true);
+  };
+
+  const processPrompts = () => {
+    performCompare(prompts);
+  };
+
+  const handleBatchCompare = () => {
+    const firstText = prompts[0]?.text;
+    if (!firstText) return;
+    
+    // Split by lines containing mostly '==='
+    const newPrompts = firstText.split(/===+/).map((part, index) => ({
+      id: Date.now() + index,
+      text: part.trim(),
+      name: `Prompt ${index + 1}`
+    })).filter(p => p.text !== '');
+
+    if (newPrompts.length < 2) {
+      alert('Could not find enough prompts separated by "===". Ensure you use it to divide your text.');
+      return;
+    }
+    
+    setPrompts(newPrompts);
+    performCompare(newPrompts);
   };
 
   const downloadMarkdown = () => {
@@ -202,6 +227,14 @@ export default function PromptComparePage() {
               >
                 <Trash2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Clear All</span>
+              </button>
+              <button
+                onClick={handleBatchCompare}
+                disabled={!prompts[0]?.text.includes('===')}
+                className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed border border-indigo-200"
+              >
+                <SplitSquareHorizontal className="w-4 h-4" />
+                <span className="hidden sm:inline">Batch Compare</span>
               </button>
               <button
                 onClick={handleAddPrompt}
