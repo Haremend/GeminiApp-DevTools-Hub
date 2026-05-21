@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -12,6 +12,14 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
+  {
+    id: 'text-split',
+    name: 'Text Split',
+    description: 'Split a URL or text string by a specific delimiter (e.g., &) and display the parameters line by line.',
+    category: 'Text',
+    icon: SplitSquareHorizontal,
+    path: '/tools/text-split',
+  },
   {
     id: 'prompt-compare',
     name: 'Prompt Compare',
