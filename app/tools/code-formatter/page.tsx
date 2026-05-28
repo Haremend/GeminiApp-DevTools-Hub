@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { AlignLeft, Copy, Trash2, ArrowRight, Check, Code2 } from 'lucide-react';
 import beautify from 'js-beautify';
 
-type Language = 'javascript' | 'html' | 'vue' | 'css' | 'java' | 'json';
+type Language = 'javascript' | 'html' | 'vue' | 'css' | 'java' | 'json' | 'text';
 
 export default function CodeFormatterPage() {
   const [inputText, setInputText] = useState('');
@@ -26,36 +26,38 @@ export default function CodeFormatterPage() {
     }
 
     let formatted = textToFormat;
-    try {
-      const options = { 
-        indent_size: 2, 
-        space_in_empty_paren: true,
-        preserve_newlines: !removeEmptyLines,
-        max_preserve_newlines: removeEmptyLines ? 0 : 2,
-        wrap_line_length: 120
-      };
-      
-      switch (language) {
-        case 'javascript':
-        case 'java':
-        case 'json':
-          formatted = beautify.js(textToFormat, options);
-          break;
-        case 'html':
-        case 'vue':
-          formatted = beautify.html(textToFormat, {
-            ...options,
-            indent_inner_html: true,
-            extra_liners: ['head', 'body', '/html', 'script', 'style']
-          });
-          break;
-        case 'css':
-          formatted = beautify.css(textToFormat, options);
-          break;
+    if (language !== 'text') {
+      try {
+        const options = { 
+          indent_size: 2, 
+          space_in_empty_paren: true,
+          preserve_newlines: !removeEmptyLines,
+          max_preserve_newlines: removeEmptyLines ? 0 : 2,
+          wrap_line_length: 120
+        };
+        
+        switch (language) {
+          case 'javascript':
+          case 'java':
+          case 'json':
+            formatted = beautify.js(textToFormat, options);
+            break;
+          case 'html':
+          case 'vue':
+            formatted = beautify.html(textToFormat, {
+              ...options,
+              indent_inner_html: true,
+              extra_liners: ['head', 'body', '/html', 'script', 'style']
+            });
+            break;
+          case 'css':
+            formatted = beautify.css(textToFormat, options);
+            break;
+        }
+      } catch (e) {
+        console.error("Formatting failed", e);
+        formatted = "Error formatting code. Please check your syntax.";
       }
-    } catch (e) {
-      console.error("Formatting failed", e);
-      formatted = "Error formatting code. Please check your syntax.";
     }
 
     setOutputText(formatted);
@@ -85,7 +87,7 @@ export default function CodeFormatterPage() {
           Code Formatter
         </h1>
         <p className="text-gray-500 text-sm mt-1">
-          Format and beautify your code. Supports JavaScript, Java, HTML, Vue, CSS, and JSON.
+          Format and beautify your code. Supports JavaScript, Java, HTML, Vue, CSS, JSON, and Text.
         </p>
       </div>
 
@@ -110,6 +112,7 @@ export default function CodeFormatterPage() {
                 <option value="vue">Vue</option>
                 <option value="css">CSS / SCSS</option>
                 <option value="json">JSON</option>
+                <option value="text">Text (Plain)</option>
               </select>
             </div>
           </div>
