@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -12,6 +12,14 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
+  {
+    id: 'url-encoder',
+    name: 'URL Encoder / Decoder',
+    description: 'Encode or decode a URL or text string to safe format for web transmission.',
+    category: 'Utilities',
+    icon: Link,
+    path: '/tools/url-encoder',
+  },
   {
     id: 'text-split',
     name: 'Text Split',
