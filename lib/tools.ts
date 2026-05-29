@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'Utilities' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -12,6 +12,14 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
+  {
+    id: 'image-ratio-calculator',
+    name: 'Image Ratio Calculator',
+    description: 'Calculate proportional image sizes (scale up or down) with specific bounds or scale factor.',
+    category: 'Image Processing',
+    icon: Calculator,
+    path: '/tools/image-ratio-calculator',
+  },
   {
     id: 'url-encoder',
     name: 'URL Encoder / Decoder',
