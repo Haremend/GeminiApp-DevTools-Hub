@@ -50,22 +50,25 @@ export default function ImageColorPickerTool() {
     img.src = url;
     img.onload = () => {
       setImage(img);
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const scaleX = canvas.width / img.width;
-        const scaleY = canvas.height / img.height;
-        const initialScale = Math.min(scaleX, scaleY, 1);
-        setScale(initialScale);
-        const offsetX = (canvas.width - img.width * initialScale) / 2;
-        const offsetY = (canvas.height - img.height * initialScale) / 2;
-        setOffset({ x: offsetX, y: offsetY });
-      }
       setPickedColor(null);
       setMode('pick');
     };
     
     e.target.value = '';
   };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas && image) {
+      const scaleX = canvas.width / image.width;
+      const scaleY = canvas.height / image.height;
+      const initialScale = Math.min(scaleX, scaleY, 1);
+      setScale(initialScale);
+      const offsetX = (canvas.width - image.width * initialScale) / 2;
+      const offsetY = (canvas.height - image.height * initialScale) / 2;
+      setOffset({ x: offsetX, y: offsetY });
+    }
+  }, [image]);
 
   const resetView = () => {
     const canvas = canvasRef.current;
@@ -113,7 +116,7 @@ export default function ImageColorPickerTool() {
 
     canvas.addEventListener('wheel', handleWheel, { passive: false });
     return () => canvas.removeEventListener('wheel', handleWheel);
-  }, []);
+  }, [image]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
