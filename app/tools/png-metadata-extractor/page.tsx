@@ -110,7 +110,7 @@ export default function PngMetadataExtractorPage() {
   };
 
   const copyToClipboard = (text: string, index: number) => {
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text.replace(/\0/g, ' '));
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
   };
