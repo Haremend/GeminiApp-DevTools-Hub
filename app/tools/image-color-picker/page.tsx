@@ -58,6 +58,33 @@ export default function ImageColorPickerTool() {
   };
 
   useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.src = url;
+            img.onload = () => {
+              setImage(img);
+              setPickedColor(null);
+              setMode('pick');
+            };
+          }
+          break;
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas && image) {
       const scaleX = canvas.width / image.width;
@@ -242,8 +269,8 @@ export default function ImageColorPickerTool() {
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
               <Upload className="w-12 h-12 text-gray-400 mb-4" />
-              <p className="text-gray-600 font-medium">Click or drag image to upload</p>
-              <p className="text-sm text-gray-500 mt-1">Supports PNG, JPG, WEBP</p>
+              <p className="text-gray-600 font-medium">Click, drag or paste image to upload</p>
+              <p className="text-sm text-gray-500 mt-1">Supports PNG, JPG, WEBP (Ctrl+V)</p>
             </div>
           ) : (
             <div className="space-y-4">
