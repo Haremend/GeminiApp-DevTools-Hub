@@ -175,6 +175,10 @@ export default function PromptComparePage() {
         </h1>
         <p className="text-gray-500 text-base mt-2">
           Compare multiple comma-separated prompts. Extracts the common base prompt and highlights unique tags per input.
+          <br />
+          <span className="inline-block mt-2 text-sm bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-100">
+            <strong>Batch Compare:</strong> Paste multiple prompts separated by <code>===</code> into the first input, then click Batch Compare to automatically split and compare them.
+          </span>
         </p>
       </div>
 
