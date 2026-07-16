@@ -117,6 +117,14 @@ export const tools: Tool[] = [
     path: '/tools/markdown-editor',
   },
   {
+    id: 'ui-layer-composite',
+    name: 'UI Layer Composite',
+    description: 'Stack and arrange multiple UI image slices with precise positioning, scaling, and opacity controls.',
+    category: 'Design',
+    icon: Layers,
+    path: '/tools/ui-layer-composite',
+  },
+  {
     id: 'color-picker',
     name: 'Color Picker',
     description: 'Pick colors from a gradient and get RGB/HEX codes for CSS.',
