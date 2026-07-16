@@ -71,7 +71,7 @@ export default function MermaidEditorPage() {
     };
 
     window.addEventListener('resize', handleResize);
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < 768 && viewMode !== 'edit') {
       setViewMode('edit');
     }
     return () => window.removeEventListener('resize', handleResize);

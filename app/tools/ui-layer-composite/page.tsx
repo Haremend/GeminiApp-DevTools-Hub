@@ -261,6 +261,7 @@ export default function UILayerCompositePage() {
                <img 
                  key={layer.id}
                  src={layer.url}
+                 alt=""
                  draggable={false}
                  onMouseDown={(e) => handleMouseDown(e, layer.id)}
                  style={{

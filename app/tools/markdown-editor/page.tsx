@@ -14,6 +14,16 @@ import { motion } from 'motion/react';
 
 type ViewMode = 'split' | 'edit' | 'preview';
 
+const ToolbarButton = ({ icon: Icon, onClick, title }: { icon: any, onClick: () => void, title: string }) => (
+  <button
+    onClick={onClick}
+    title={title}
+    className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+  >
+    <Icon className="w-4 h-4" />
+  </button>
+);
+
 export default function MarkdownEditorPage() {
   const [markdown, setMarkdown] = useState<string>(`# Welcome to Markdown Editor
 
@@ -114,16 +124,6 @@ greet('World');
       }
     }
   };
-
-  const ToolbarButton = ({ icon: Icon, onClick, title }: { icon: any, onClick: () => void, title: string }) => (
-    <button
-      onClick={onClick}
-      title={title}
-      className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-    >
-      <Icon className="w-4 h-4" />
-    </button>
-  );
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] max-w-7xl mx-auto w-full p-4">

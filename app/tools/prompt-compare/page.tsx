@@ -15,7 +15,7 @@ interface DiffResult {
 }
 
 export default function PromptComparePage() {
-  const [prompts, setPrompts] = useState<PromptInput[]>([{ id: Date.now(), text: '', name: `Prompt 1` }]);
+  const [prompts, setPrompts] = useState<PromptInput[]>(() => [{ id: Date.now(), text: '', name: `Prompt 1` }]);
   const [isComparing, setIsComparing] = useState(false);
   const [result, setResult] = useState<{ base: string; diffs: DiffResult[] } | null>(null);
 
