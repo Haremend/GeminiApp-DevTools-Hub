@@ -156,6 +156,15 @@ This document provides a detailed functional description and usage guide for eve
 - **Base Dimensions:** Enter original width and height to establish the aspect ratio.
 - **Scaling:** Lock ratio and enter a new width or height to calculate the counterpart.
 
+### Picture Split
+**Path:** `/tools/picture-split`
+**Description:** A precision image cropping tool that lets you specify exact pixel distances from the 4 edges of the image.
+**Features & Usage:**
+- **Input:** Upload, drag and drop, or paste (Ctrl+V) an image.
+- **Visual Overlay:** The image fills the canvas with a cropping box overlay. Drag the edges to visually crop the image. The unselected area is shaded with a gray overlay.
+- **Precision Parameters:** Fine-tune the crop by inputting exact top, bottom, left, and right pixel distances in the right sidebar.
+- **Export:** Click the download button to save the selected area as a high-quality PNG image.
+
 ### Image Editor
 **Path:** `/tools/image-editor`
 **Description:** Annotate images with arrows, text, freehand drawing, mosaic, and cropping.

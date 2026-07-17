@@ -157,6 +157,14 @@ export const tools: Tool[] = [
     path: '/tools/crypto-toolkit',
   },
   {
+    id: 'picture-split',
+    name: 'Picture Split',
+    description: 'Crop images by specifying exact pixel distances from the edges with a visual overlay.',
+    category: 'Image Processing',
+    icon: SplitSquareHorizontal,
+    path: '/tools/picture-split',
+  },
+  {
     id: 'image-editor',
     name: 'Image Editor',
     description: 'Annotate images with arrows, text, freehand drawing, mosaic, and cropping.',
