@@ -1,12 +1,34 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, Download, Edit2, Trash2, Image as ImageIcon } from 'lucide-react';
 
 export default function ImageEditorTool() {
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            const url = URL.createObjectURL(file);
+            setSourceImage(url);
+            setResultImage(url);
+          }
+          break;
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,8 +89,8 @@ export default function ImageEditorTool() {
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
               <Upload className="w-12 h-12 text-gray-400 mb-4" />
-              <p className="text-gray-600 font-medium">Click or drag image to upload</p>
-              <p className="text-sm text-gray-500 mt-1">Supports PNG, JPG, WEBP</p>
+              <p className="text-gray-600 font-medium">Click, drag, or paste image to upload</p>
+              <p className="text-sm text-gray-500 mt-1">Supports PNG, JPG, WEBP (Ctrl+V)</p>
             </div>
           </div>
         ) : (
