@@ -12,9 +12,6 @@ export default function ImageEditorTool() {
     setEditor(editorInstance);
     // Improve UX for a basic image editor: zoom on scroll instead of pan, and show a grid.
     editorInstance.updateInstanceState({ isGridMode: true });
-    editorInstance.setCameraOptions({
-      wheelBehavior: 'zoom',
-    });
   };
 
   const handleCopy = async () => {
