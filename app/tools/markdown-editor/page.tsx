@@ -76,10 +76,15 @@ greet('World');
 
     window.addEventListener('resize', handleResize);
     // Initial check
-    if (window.innerWidth < 768) {
-      setViewMode('edit');
-    }
-    return () => window.removeEventListener('resize', handleResize);
+    const timeoutId = setTimeout(() => {
+      if (window.innerWidth < 768 && viewMode !== 'edit') {
+        setViewMode('edit');
+      }
+    }, 0);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutId);
+    };
   }, [viewMode]);
 
   const insertText = (before: string, after: string = '', defaultText: string = '') => {

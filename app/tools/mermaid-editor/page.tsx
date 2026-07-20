@@ -71,10 +71,17 @@ export default function MermaidEditorPage() {
     };
 
     window.addEventListener('resize', handleResize);
-    if (window.innerWidth < 768 && viewMode !== 'edit') {
-      setViewMode('edit');
-    }
-    return () => window.removeEventListener('resize', handleResize);
+    
+    const timeoutId = setTimeout(() => {
+      if (window.innerWidth < 768 && viewMode !== 'edit') {
+        setViewMode('edit');
+      }
+    }, 0);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutId);
+    };
   }, [viewMode]);
 
   const downloadImage = (format: 'png' | 'jpg') => {

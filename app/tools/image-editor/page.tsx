@@ -1,6 +1,6 @@
 'use client';
 
-import { Tldraw, exportToBlob, Editor } from 'tldraw';
+import { Tldraw, exportAs, copyAs, Editor } from 'tldraw';
 import 'tldraw/tldraw.css';
 import { useState } from 'react';
 import { Copy, Download, Trash2, Image as ImageIcon } from 'lucide-react';
@@ -21,15 +21,10 @@ export default function ImageEditorTool() {
     }
     
     try {
-      const blob = await exportToBlob({
-        editor,
-        ids: shapeIds,
+      await copyAs(editor, shapeIds, {
         format: 'png',
-        opts: { background: true }
+        background: true
       });
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ]);
       alert('Copied to clipboard!');
     } catch (error) {
       console.error('Failed to copy', error);
@@ -46,18 +41,10 @@ export default function ImageEditorTool() {
     }
 
     try {
-      const blob = await exportToBlob({
-        editor,
-        ids: shapeIds,
+      await exportAs(editor, shapeIds, {
         format: 'png',
-        opts: { background: true }
+        background: true
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `edited-image-${Date.now()}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to download', error);
       alert('Failed to generate image download.');
