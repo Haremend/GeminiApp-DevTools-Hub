@@ -1,7 +1,7 @@
 'use client';
 
 import { Image as ImageIcon, Download, Trash2, Pen, Square, Circle, ArrowRight, Type, Grid } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 type Tool = 'brush' | 'rect' | 'circle' | 'arrow' | 'text' | 'mosaic';
 
@@ -9,9 +9,13 @@ export default function ImageEditorTool() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [color, setColor] = useState('#000000');
+  const [color, setColor] = useState('#ff0000'); // Default color is red
   const [brushSize, setBrushSize] = useState(5);
   const [currentTool, setCurrentTool] = useState<Tool>('brush');
+
+  // Text input state
+  const [textInput, setTextInput] = useState({ visible: false, x: 0, y: 0, text: '' });
+  const textInputRef = useRef<HTMLInputElement>(null);
 
   const savedImageData = useRef<ImageData | null>(null);
   const startPos = useRef<{x: number, y: number}>({x: 0, y: 0});
@@ -22,11 +26,8 @@ export default function ImageEditorTool() {
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    // Set canvas size to match container
     const resizeCanvas = () => {
       const { width, height } = container.getBoundingClientRect();
-      
-      // Save old image data before resizing
       const ctx = canvas.getContext('2d');
       let imgData = null;
       
@@ -38,11 +39,8 @@ export default function ImageEditorTool() {
       canvas.height = height;
       
       if (ctx) {
-        // Fill white background
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, width, height);
-        
-        // Restore old image data
         if (imgData) {
           ctx.putImageData(imgData, 0, 0);
         }
@@ -52,6 +50,37 @@ export default function ImageEditorTool() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
     return () => window.removeEventListener('resize', resizeCanvas);
+  }, []);
+
+  const drawImageProportionally = useCallback((img: HTMLImageElement) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    // Calculate scale to fit image within canvas with some padding (e.g., 90% max)
+    const padding = 0.9;
+    const canvasRatio = canvas.width / canvas.height;
+    const imgRatio = img.width / img.height;
+    
+    let renderWidth = img.width;
+    let renderHeight = img.height;
+
+    if (img.width > canvas.width * padding || img.height > canvas.height * padding) {
+      if (canvasRatio > imgRatio) {
+        // Fit by height
+        renderHeight = canvas.height * padding;
+        renderWidth = img.width * (renderHeight / img.height);
+      } else {
+        // Fit by width
+        renderWidth = canvas.width * padding;
+        renderHeight = img.height * (renderWidth / img.width);
+      }
+    }
+
+    const x = (canvas.width - renderWidth) / 2;
+    const y = (canvas.height - renderHeight) / 2;
+    
+    ctx.drawImage(img, x, y, renderWidth, renderHeight);
   }, []);
 
   useEffect(() => {
@@ -65,14 +94,7 @@ export default function ImageEditorTool() {
           
           const img = new Image();
           img.onload = () => {
-            const canvas = canvasRef.current;
-            const ctx = canvas?.getContext('2d');
-            if (canvas && ctx) {
-              // Draw image centered
-              const x = (canvas.width - img.width) / 2;
-              const y = (canvas.height - img.height) / 2;
-              ctx.drawImage(img, x, y);
-            }
+            drawImageProportionally(img);
           };
           img.src = URL.createObjectURL(blob);
         }
@@ -81,7 +103,7 @@ export default function ImageEditorTool() {
     
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, []);
+  }, [drawImageProportionally]);
 
   const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
@@ -100,20 +122,40 @@ export default function ImageEditorTool() {
     }
   };
 
+  const handleTextSubmit = () => {
+    if (!textInput.visible) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx && textInput.text.trim() !== '') {
+      ctx.font = `${brushSize * 4 + 10}px sans-serif`;
+      ctx.fillStyle = color;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(textInput.text, textInput.x, textInput.y);
+    }
+    
+    setTextInput({ visible: false, x: 0, y: 0, text: '' });
+  };
+
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     const coords = getCoordinates(e);
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
 
+    if (textInput.visible) {
+      handleTextSubmit();
+      return;
+    }
+
     if (currentTool === 'text') {
-      const text = window.prompt('Enter text:');
-      if (text) {
-        ctx.font = `${brushSize * 4 + 10}px sans-serif`;
-        ctx.fillStyle = color;
-        ctx.textBaseline = 'middle';
-        ctx.fillText(text, coords.x, coords.y);
-      }
+      setTextInput({
+        visible: true,
+        x: coords.x,
+        y: coords.y,
+        text: ''
+      });
+      setTimeout(() => textInputRef.current?.focus(), 50);
       return;
     }
 
@@ -243,11 +285,19 @@ export default function ImageEditorTool() {
   const downloadImage = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const dataUrl = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = 'edited-image.png';
-    a.click();
+    
+    if (textInput.visible) {
+      handleTextSubmit();
+    }
+    
+    // Slight delay to allow text to render if it was just submitted
+    setTimeout(() => {
+      const dataUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'edited-image.png';
+      a.click();
+    }, 100);
   };
 
   const ToolButton = ({ icon: Icon, tool, label }: { icon: any, tool: Tool, label: string }) => (
@@ -261,7 +311,7 @@ export default function ImageEditorTool() {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden relative">
       <header className="h-auto py-2 sm:h-14 sm:py-0 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between px-4 bg-white shrink-0 shadow-sm z-20 gap-3 sm:gap-0">
         <div className="flex items-center gap-2 lg:gap-3 w-full sm:w-auto justify-between sm:justify-start">
           <div className="flex items-center gap-2">
@@ -331,6 +381,36 @@ export default function ImageEditorTool() {
           onTouchMove={draw}
           className="absolute inset-0 touch-none"
         />
+        
+        {textInput.visible && (
+          <input
+            ref={textInputRef}
+            type="text"
+            value={textInput.text}
+            onChange={(e) => setTextInput({ ...textInput, text: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleTextSubmit();
+              }
+            }}
+            onBlur={handleTextSubmit}
+            style={{
+              position: 'absolute',
+              left: `${textInput.x}px`,
+              top: `${textInput.y}px`,
+              transform: 'translateY(-50%)',
+              color: color,
+              fontSize: `${brushSize * 4 + 10}px`,
+              background: 'transparent',
+              border: '1px dashed #ccc',
+              outline: 'none',
+              padding: '2px',
+              minWidth: '100px',
+              zIndex: 30
+            }}
+            placeholder="Type here..."
+          />
+        )}
       </div>
     </div>
   );
