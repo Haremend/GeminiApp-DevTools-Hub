@@ -241,8 +241,8 @@ export default function ImageEditorTool() {
         circle.set({ radius });
       } else if (currentTool === 'arrow') {
         const group = obj as fabric.Group;
-        const line = group.item(0) as fabric.Line;
-        const triangle = group.item(1) as fabric.Triangle;
+        const line = group.getObjects()[0] as unknown as fabric.Line;
+        const triangle = group.getObjects()[1] as unknown as fabric.Triangle;
 
         const dx = pointer.x - startPos.x;
         const dy = pointer.y - startPos.y;
