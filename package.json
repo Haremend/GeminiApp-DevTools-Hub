@@ -18,7 +18,7 @@
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
     "diff": "^9.0.0",
-    "fabric": "^5.5.2",
+    "fabric": "^7.4.0",
     "js-beautify": "^1.15.4",
     "js-yaml": "^4.1.1",
     "jsqr": "^1.4.0",
@@ -37,8 +37,7 @@
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "sm-crypto": "^0.4.0",
-    "tailwind-merge": "^3.3.1",
-    "tldraw": "^5.2.5"
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.11",

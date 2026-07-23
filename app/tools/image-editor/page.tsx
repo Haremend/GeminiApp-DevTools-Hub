@@ -1,213 +1,137 @@
 'use client';
 
+import { Image as ImageIcon, Download, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Download, Trash2, Image as ImageIcon, MousePointer2, Type, Square, Circle, PenTool } from 'lucide-react';
 
 export default function ImageEditorTool() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [fabricCanvas, setFabricCanvas] = useState<any>(null);
-  const [activeTool, setActiveTool] = useState<string>('select');
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [color, setColor] = useState('#000000');
+  const [brushSize, setBrushSize] = useState(5);
 
   useEffect(() => {
-    // Dynamically import fabric to avoid SSR issues
-    const initFabric = async () => {
-      const fabric = (await import('fabric')).fabric;
-      
-      if (!canvasRef.current || !containerRef.current) return;
-      
-      const { clientWidth, clientHeight } = containerRef.current;
-      
-      const canvas = new fabric.Canvas(canvasRef.current, {
-        width: clientWidth,
-        height: clientHeight,
-        backgroundColor: '#e5e7eb', // gray-200
-        isDrawingMode: false,
-      });
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
-      // Handle resize
-      const handleResize = () => {
-        if (containerRef.current) {
-          canvas.setWidth(containerRef.current.clientWidth);
-          canvas.setHeight(containerRef.current.clientHeight);
-          canvas.renderAll();
-        }
-      };
+    // Set canvas size to match container
+    const resizeCanvas = () => {
+      const { width, height } = container.getBoundingClientRect();
       
-      window.addEventListener('resize', handleResize);
+      // Save old image data before resizing
+      const ctx = canvas.getContext('2d');
+      let imgData = null;
       
-      // Handle paste
-      const handlePaste = (e: ClipboardEvent) => {
-        const items = e.clipboardData?.items;
-        if (!items) return;
+      if (canvas.width > 0 && canvas.height > 0 && ctx) {
+        imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      if (ctx) {
+        // Fill white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
         
-        for (let i = 0; i < items.length; i++) {
-          if (items[i].type.indexOf('image') !== -1) {
-            const blob = items[i].getAsFile();
-            if (blob) {
-              const reader = new FileReader();
-              reader.onload = (f) => {
-                const data = f.target?.result as string;
-                fabric.Image.fromURL(data, (img) => {
-                  // Center and scale image if too large
-                  img.scaleToWidth(Math.min(img.width || 800, canvas.width! * 0.8));
-                  canvas.centerObject(img);
-                  canvas.add(img);
-                  canvas.setActiveObject(img);
-                });
-              };
-              reader.readAsDataURL(blob);
-            }
-            break;
-          }
+        // Restore old image data
+        if (imgData) {
+          ctx.putImageData(imgData, 0, 0);
         }
-      };
-      
-      window.addEventListener('paste', handlePaste);
-      
-      setFabricCanvas(canvas);
-
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        window.removeEventListener('paste', handlePaste);
-        canvas.dispose();
-      };
-    };
-    
-    initFabric();
-  }, []);
-
-  const handleToolChange = (tool: string) => {
-    setActiveTool(tool);
-    if (!fabricCanvas) return;
-    
-    if (tool === 'draw') {
-      fabricCanvas.isDrawingMode = true;
-    } else {
-      fabricCanvas.isDrawingMode = false;
-    }
-  };
-
-  const addText = () => {
-    if (!fabricCanvas) return;
-    import('fabric').then(({ fabric }) => {
-      const text = new fabric.IText('Double click to edit', {
-        left: fabricCanvas.width! / 2 - 100,
-        top: fabricCanvas.height! / 2 - 20,
-        fontFamily: 'sans-serif',
-        fill: '#000000',
-        fontSize: 24,
-      });
-      fabricCanvas.add(text);
-      fabricCanvas.setActiveObject(text);
-      setActiveTool('select');
-      fabricCanvas.isDrawingMode = false;
-    });
-  };
-
-  const addRect = () => {
-    if (!fabricCanvas) return;
-    import('fabric').then(({ fabric }) => {
-      const rect = new fabric.Rect({
-        left: fabricCanvas.width! / 2 - 50,
-        top: fabricCanvas.height! / 2 - 50,
-        fill: 'transparent',
-        stroke: '#000000',
-        strokeWidth: 4,
-        width: 100,
-        height: 100,
-      });
-      fabricCanvas.add(rect);
-      fabricCanvas.setActiveObject(rect);
-      setActiveTool('select');
-      fabricCanvas.isDrawingMode = false;
-    });
-  };
-
-  const addCircle = () => {
-    if (!fabricCanvas) return;
-    import('fabric').then(({ fabric }) => {
-      const circle = new fabric.Circle({
-        left: fabricCanvas.width! / 2 - 50,
-        top: fabricCanvas.height! / 2 - 50,
-        fill: 'transparent',
-        stroke: '#000000',
-        strokeWidth: 4,
-        radius: 50,
-      });
-      fabricCanvas.add(circle);
-      fabricCanvas.setActiveObject(circle);
-      setActiveTool('select');
-      fabricCanvas.isDrawingMode = false;
-    });
-  };
-
-  const handleCopy = async () => {
-    if (!fabricCanvas) return;
-    try {
-      const dataUrl = fabricCanvas.toDataURL({
-        format: 'png',
-        quality: 1
-      });
-      
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ]);
-      alert('Copied to clipboard!');
-    } catch (error) {
-      console.error('Failed to copy', error);
-      alert('Failed to copy to clipboard.');
-    }
-  };
-
-  const handleDownload = () => {
-    if (!fabricCanvas) return;
-    const dataUrl = fabricCanvas.toDataURL({
-      format: 'png',
-      quality: 1
-    });
-    
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = `edited-image-${Date.now()}.png`;
-    a.click();
-  };
-
-  const handleClear = () => {
-    if (!fabricCanvas) return;
-    if (confirm('Are you sure you want to clear the entire canvas?')) {
-      fabricCanvas.clear();
-      fabricCanvas.backgroundColor = '#e5e7eb';
-      fabricCanvas.renderAll();
-    }
-  };
-
-  const deleteSelected = () => {
-    if (!fabricCanvas) return;
-    const activeObjects = fabricCanvas.getActiveObjects();
-    if (activeObjects.length) {
-      fabricCanvas.discardActiveObject();
-      activeObjects.forEach((obj: any) => {
-        fabricCanvas.remove(obj);
-      });
-    }
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && fabricCanvas) {
-        // Prevent deleting if editing text
-        if (fabricCanvas.getActiveObject() && fabricCanvas.getActiveObject().isEditing) {
-          return;
-        }
-        deleteSelected();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [fabricCanvas]);
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    return () => window.removeEventListener('resize', resizeCanvas);
+  }, []);
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (!e.clipboardData) return;
+      const items = e.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (!blob) continue;
+          
+          const img = new Image();
+          img.onload = () => {
+            const canvas = canvasRef.current;
+            const ctx = canvas?.getContext('2d');
+            if (canvas && ctx) {
+              // Draw image centered
+              const x = (canvas.width - img.width) / 2;
+              const y = (canvas.height - img.height) / 2;
+              ctx.drawImage(img, x, y);
+            }
+          };
+          img.src = URL.createObjectURL(blob);
+        }
+      }
+    };
+    
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
+
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsDrawing(true);
+    draw(e);
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) ctx.beginPath();
+  };
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    let x, y;
+
+    if ('touches' in e) {
+      x = e.touches[0].clientX - rect.left;
+      y = e.touches[0].clientY - rect.top;
+    } else {
+      x = (e as React.MouseEvent).clientX - rect.left;
+      y = (e as React.MouseEvent).clientY - rect.top;
+    }
+
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = color;
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  const downloadImage = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'edited-image.png';
+    a.click();
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
@@ -216,76 +140,60 @@ export default function ImageEditorTool() {
           <ImageIcon className="w-5 h-5 text-indigo-600" />
           <h1 className="font-bold text-gray-800 text-lg">Image Editor</h1>
           <span className="text-sm text-gray-500 ml-4 hidden md:inline-block border-l border-gray-200 pl-4">
-            Paste images (Ctrl+V), annotate, and export. Select objects and press Delete to remove.
+            Free & Open Source. Paste images (Ctrl+V) and draw.
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-gray-100 p-1.5 rounded-md">
+            <input 
+              type="color" 
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0"
+              title="Brush Color"
+            />
+            <input 
+              type="range" 
+              min="1" 
+              max="20" 
+              value={brushSize}
+              onChange={(e) => setBrushSize(parseInt(e.target.value))}
+              className="w-24 cursor-pointer"
+              title="Brush Size"
+            />
+          </div>
+          
           <button 
-            onClick={handleClear} 
-            className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors shadow-sm"
+            onClick={clearCanvas}
+            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors flex items-center gap-2"
+            title="Clear Canvas"
           >
-            <Trash2 className="w-4 h-4" /> 
-            <span className="hidden sm:inline">Clear</span>
+            <Trash2 className="w-4 h-4" />
           </button>
+          
           <button 
-            onClick={handleCopy} 
-            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors shadow-sm"
+            onClick={downloadImage}
+            className="px-3 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-md transition-colors flex items-center gap-2 text-sm font-medium"
           >
-            <Copy className="w-4 h-4" /> 
-            <span className="hidden sm:inline">Copy</span>
-          </button>
-          <button 
-            onClick={handleDownload} 
-            className="flex items-center gap-2 px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
-          >
-            <Download className="w-4 h-4" /> 
-            <span className="hidden sm:inline">Download</span>
+            <Download className="w-4 h-4" />
+            Save
           </button>
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden min-h-0">
-        <aside className="w-16 border-r border-gray-200 bg-white flex flex-col items-center py-4 gap-4 z-10 shrink-0">
-          <button
-            onClick={() => handleToolChange('select')}
-            className={`p-2 rounded-lg transition-colors ${activeTool === 'select' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}
-            title="Select tool"
-          >
-            <MousePointer2 className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => handleToolChange('draw')}
-            className={`p-2 rounded-lg transition-colors ${activeTool === 'draw' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}
-            title="Draw tool"
-          >
-            <PenTool className="w-5 h-5" />
-          </button>
-          <button
-            onClick={addText}
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-            title="Add text"
-          >
-            <Type className="w-5 h-5" />
-          </button>
-          <button
-            onClick={addRect}
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-            title="Add rectangle"
-          >
-            <Square className="w-5 h-5" />
-          </button>
-          <button
-            onClick={addCircle}
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-            title="Add circle"
-          >
-            <Circle className="w-5 h-5" />
-          </button>
-        </aside>
-
-        <div className="flex-1 relative isolate min-h-0 overflow-hidden" ref={containerRef}>
-          <canvas ref={canvasRef} />
-        </div>
+      <div ref={containerRef} className="flex-1 relative isolate min-h-0 overflow-hidden cursor-crosshair">
+        <canvas
+          ref={canvasRef}
+          onMouseDown={startDrawing}
+          onMouseUp={stopDrawing}
+          onMouseOut={stopDrawing}
+          onMouseMove={draw}
+          onTouchStart={startDrawing}
+          onTouchEnd={stopDrawing}
+          onTouchMove={draw}
+          className="absolute inset-0 touch-none"
+        />
       </div>
     </div>
   );
