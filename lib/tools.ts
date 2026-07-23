@@ -188,6 +188,14 @@ export const tools: Tool[] = [
     icon: ScanLine,
     path: '/tools/qr-scanner',
   },
+  {
+    id: 'remove-duplicates',
+    name: 'Remove Duplicates',
+    description: 'Remove duplicate lines from a block of text, keeping only the first occurrence.',
+    category: 'Text',
+    icon: Layers,
+    path: '/tools/remove-duplicates',
+  },
 ];
 
 export const categories: Category[] = Array.from(new Set(tools.map((t) => t.category)));
