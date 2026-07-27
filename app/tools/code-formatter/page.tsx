@@ -38,9 +38,17 @@ export default function CodeFormatterPage() {
         
         switch (language) {
           case 'javascript':
-          case 'java':
           case 'json':
             formatted = beautify.js(textToFormat, options);
+            break;
+          case 'java':
+            formatted = beautify.js(textToFormat, options);
+            // Fix Java generics formatting: Map < String, Object > map = new HashMap < > (); -> Map<String, Object> map = new HashMap<>();
+            formatted = formatted
+              .replace(/< /g, '<')
+              .replace(/ >/g, '>')
+              .replace(/ <(?=>|[A-Z?])/g, '<')
+              .replace(/> \(/g, '>(');
             break;
           case 'html':
           case 'vue':
