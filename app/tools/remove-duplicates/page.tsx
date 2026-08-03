@@ -7,11 +7,23 @@ export default function RemoveDuplicatesTool() {
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isSorted, setIsSorted] = useState(false);
+  const [removeEmpty, setRemoveEmpty] = useState(false);
+
+  const processLines = (text: string, sorted: boolean, removeEmptyLines: boolean) => {
+    let lines = text.split('\n');
+    if (removeEmptyLines) {
+      lines = lines.filter(line => line.trim().length > 0);
+    }
+    let uniqueLines = Array.from(new Set(lines));
+    if (sorted) {
+      uniqueLines.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+    }
+    return uniqueLines.join('\n');
+  };
 
   const handleDeduplicate = () => {
-    const lines = inputText.split('\n');
-    const uniqueLines = Array.from(new Set(lines));
-    setOutputText(uniqueLines.join('\n'));
+    setOutputText(processLines(inputText, isSorted, removeEmpty));
   };
 
   const handleCopy = async () => {
@@ -39,6 +51,36 @@ export default function RemoveDuplicatesTool() {
         </div>
         
         <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1.5 mr-2 text-sm text-gray-700 cursor-pointer hover:text-indigo-600 transition-colors">
+            <input 
+              type="checkbox" 
+              checked={removeEmpty} 
+              onChange={(e) => {
+                const newRemoveEmpty = e.target.checked;
+                setRemoveEmpty(newRemoveEmpty);
+                if (outputText) {
+                  setOutputText(processLines(inputText, isSorted, newRemoveEmpty));
+                }
+              }}
+              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-4 h-4"
+            />
+            <span className="font-medium">去除空行</span>
+          </label>
+          <label className="flex items-center gap-1.5 mr-2 text-sm text-gray-700 cursor-pointer hover:text-indigo-600 transition-colors">
+            <input 
+              type="checkbox" 
+              checked={isSorted} 
+              onChange={(e) => {
+                const newIsSorted = e.target.checked;
+                setIsSorted(newIsSorted);
+                if (outputText) {
+                  setOutputText(processLines(inputText, newIsSorted, removeEmpty));
+                }
+              }}
+              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-4 h-4"
+            />
+            <span className="font-medium">Sort</span>
+          </label>
           <button 
             onClick={handleClear}
             className="px-3 py-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors flex items-center gap-2 text-sm font-medium"
