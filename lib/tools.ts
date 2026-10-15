@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch, Volume2 } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -195,6 +195,14 @@ export const tools: Tool[] = [
     category: 'Text',
     icon: Layers,
     path: '/tools/remove-duplicates',
+  },
+  {
+    id: 'text-reader',
+    name: 'Text Reader (文本阅读器)',
+    description: 'Paste text, automatically split into lines, and read aloud with synchronized speech, line highlighting, speed control, and progress seeking.',
+    category: 'Text',
+    icon: Volume2,
+    path: '/tools/text-reader',
   },
 ];
 

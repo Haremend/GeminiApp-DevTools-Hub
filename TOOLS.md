@@ -61,7 +61,14 @@ This document provides a detailed functional description and usage guide for eve
 **Features & Usage:**
 - **Editor:** Write markdown with a convenient formatting toolbar (Bold, Italic, Code, Link, etc.).
 - **Live Preview:** See the rendered HTML side-by-side as you type.
-- **Export:** Copy the markdown or the rendered HTML.
+### Text Reader (文本阅读器)
+**Path:** `/tools/text-reader`
+**Description:** Paste text, automatically split into sentences/lines, and listen with synchronized speech, line highlighting, and seeking.
+**Features & Usage:**
+- **Text Input & Auto-split:** Paste any multi-line text, automatically split by line breaks into readable sentences.
+- **Voice & Language Selection:** Supports Chinese (zh), Japanese (ja), and English (en) with full browser voice selection.
+- **Speed & Progress Seeking:** Adjust reading speed (0.5x ~ 2.0x) and seek to any sentence with interactive slider.
+- **Synchronized Highlighting & Auto-scroll:** Current sentence is highlighted and scrolled smoothly to center during reading.
 
 ## 💻 Development
 
