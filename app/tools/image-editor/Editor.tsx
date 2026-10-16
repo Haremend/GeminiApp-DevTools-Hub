@@ -6,6 +6,30 @@ import { fabric } from 'fabric';
 
 type Tool = 'select' | 'brush' | 'rect' | 'circle' | 'arrow' | 'text' | 'mosaic';
 
+function ToolButton({
+  icon: Icon,
+  tool,
+  label,
+  currentTool,
+  onSelect,
+}: {
+  icon: any;
+  tool: Tool;
+  label: string;
+  currentTool: Tool;
+  onSelect: (t: Tool) => void;
+}) {
+  return (
+    <button
+      onClick={() => onSelect(tool)}
+      className={`p-2 rounded-md transition-colors flex items-center justify-center ${currentTool === tool ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}
+      title={label}
+    >
+      <Icon className="w-5 h-5" />
+    </button>
+  );
+}
+
 export default function ImageEditorTool() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
@@ -13,7 +37,6 @@ export default function ImageEditorTool() {
   const [color, setColor] = useState('#ff0000');
   const [brushSize, setBrushSize] = useState(5);
   const [history, setHistory] = useState<string[]>([]);
-  const [isReady, setIsReady] = useState(false);
 
   // We need to keep a reference to current drawing object (rect, circle, arrow)
   const drawingObjectRef = useRef<fabric.Object | null>(null);
@@ -62,7 +85,6 @@ export default function ImageEditorTool() {
     });
     
     canvasRef.current = canvas;
-    setIsReady(true);
     
     // Save initial history
     saveHistory();
@@ -97,7 +119,7 @@ export default function ImageEditorTool() {
   // Update canvas state when tool or color changes
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !isReady) return;
+    if (!canvas) return;
 
     if (currentTool === 'brush') {
       canvas.isDrawingMode = true;
@@ -121,12 +143,12 @@ export default function ImageEditorTool() {
     });
     
     canvas.renderAll();
-  }, [currentTool, color, brushSize, isReady]);
+  }, [currentTool, color, brushSize]);
 
   // Handle shape drawing
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !isReady) return;
+    if (!canvas) return;
 
     const handleMouseDown = (o: fabric.IEvent) => {
       if (currentTool === 'select' || currentTool === 'brush' || currentTool === 'mosaic') return;
@@ -294,11 +316,10 @@ export default function ImageEditorTool() {
       canvas.off('mouse:move', handleMouseMove);
       canvas.off('mouse:up', handleMouseUp);
     };
-  }, [currentTool, color, brushSize, isReady, saveHistory]);
+  }, [currentTool, color, brushSize, saveHistory]);
 
   // Handle Paste
   useEffect(() => {
-    if (!isReady) return;
     const handlePaste = (e: ClipboardEvent) => {
       if (!e.clipboardData || !canvasRef.current) return;
       const items = e.clipboardData.items;
@@ -338,7 +359,7 @@ export default function ImageEditorTool() {
     
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [isReady, saveHistory]);
+  }, [saveHistory]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.key === 'Delete' || e.key === 'Backspace') && canvasRef.current) {
@@ -395,16 +416,6 @@ export default function ImageEditorTool() {
     a.click();
   };
 
-  const ToolButton = ({ icon: Icon, tool, label }: { icon: any, tool: Tool, label: string }) => (
-    <button
-      onClick={() => setCurrentTool(tool)}
-      className={`p-2 rounded-md transition-colors flex items-center justify-center ${currentTool === tool ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}
-      title={label}
-    >
-      <Icon className="w-5 h-5" />
-    </button>
-  );
-
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden relative">
       <header className="h-auto py-2 sm:h-14 sm:py-0 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between px-4 bg-white shrink-0 shadow-sm z-20 gap-3 sm:gap-0">
@@ -417,13 +428,13 @@ export default function ImageEditorTool() {
           <div className="h-6 w-px bg-gray-200 mx-1 lg:mx-2 hidden sm:block"></div>
           
           <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
-            <ToolButton icon={MousePointer2} tool="select" label="Select & Move" />
-            <ToolButton icon={Pen} tool="brush" label="Brush" />
-            <ToolButton icon={Square} tool="rect" label="Rectangle" />
-            <ToolButton icon={Circle} tool="circle" label="Circle" />
-            <ToolButton icon={ArrowRight} tool="arrow" label="Arrow" />
-            <ToolButton icon={Type} tool="text" label="Text" />
-            <ToolButton icon={Grid} tool="mosaic" label="Mosaic / Redact" />
+            <ToolButton icon={MousePointer2} tool="select" label="Select & Move" currentTool={currentTool} onSelect={setCurrentTool} />
+            <ToolButton icon={Pen} tool="brush" label="Brush" currentTool={currentTool} onSelect={setCurrentTool} />
+            <ToolButton icon={Square} tool="rect" label="Rectangle" currentTool={currentTool} onSelect={setCurrentTool} />
+            <ToolButton icon={Circle} tool="circle" label="Circle" currentTool={currentTool} onSelect={setCurrentTool} />
+            <ToolButton icon={ArrowRight} tool="arrow" label="Arrow" currentTool={currentTool} onSelect={setCurrentTool} />
+            <ToolButton icon={Type} tool="text" label="Text" currentTool={currentTool} onSelect={setCurrentTool} />
+            <ToolButton icon={Grid} tool="mosaic" label="Mosaic / Redact" currentTool={currentTool} onSelect={setCurrentTool} />
           </div>
         </div>
         
