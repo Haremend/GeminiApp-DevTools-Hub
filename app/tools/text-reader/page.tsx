@@ -54,7 +54,10 @@ export default function TextReaderPage() {
   const [progressPercent, setProgressPercent] = useState<number>(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekSliderVal, setSeekSliderVal] = useState<number>(0);
-  const [speechSupported, setSpeechSupported] = useState<boolean>(true);
+  const [speechSupported] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return 'speechSynthesis' in window;
+  });
 
   // Refs
   const isReadingRef = useRef(false);
@@ -66,20 +69,34 @@ export default function TextReaderPage() {
   const selectedVoiceURIRef = useRef<string>('');
   const rateRef = useRef<number>(1.0);
   const selectedLangRef = useRef<SupportedLang>('zh');
+  const createUtteranceRef = useRef<((lineIndex: number, linesToRead: string[]) => SpeechSynthesisUtterance) | null>(null);
 
-  // Keep refs in sync
-  isReadingRef.current = isReading;
-  currentLineRef.current = currentLineIndex;
-  linesRef.current = splitLines;
-  voicesRef.current = availableVoices;
-  selectedVoiceURIRef.current = selectedVoiceURI;
-  rateRef.current = rate;
-  selectedLangRef.current = selectedLang;
+  // Filter voices for current language
+  const currentLangVoices = useMemo(() => {
+    return availableVoices.filter(v => (v.lang || '').toLowerCase().startsWith(selectedLang));
+  }, [availableVoices, selectedLang]);
+
+  // Derive active voice: preserve user choice if available, otherwise fallback to first available
+  const activeVoiceURI = useMemo(() => {
+    if (currentLangVoices.length === 0) return '';
+    const exists = currentLangVoices.some(v => v.voiceURI === selectedVoiceURI);
+    return exists ? selectedVoiceURI : currentLangVoices[0].voiceURI;
+  }, [currentLangVoices, selectedVoiceURI]);
+
+  // Keep refs in sync inside effect (outside render)
+  useEffect(() => {
+    isReadingRef.current = isReading;
+    currentLineRef.current = currentLineIndex;
+    linesRef.current = splitLines;
+    voicesRef.current = availableVoices;
+    selectedVoiceURIRef.current = activeVoiceURI;
+    rateRef.current = rate;
+    selectedLangRef.current = selectedLang;
+  });
 
   // Initialize SpeechSynthesis and Voices
   useEffect(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      setSpeechSupported(false);
       return;
     }
 
@@ -120,24 +137,6 @@ export default function TextReaderPage() {
       }
     };
   }, []);
-
-  // Filter voices for current language and preserve selection
-  const currentLangVoices = useMemo(() => {
-    return availableVoices.filter(v => (v.lang || '').toLowerCase().startsWith(selectedLang));
-  }, [availableVoices, selectedLang]);
-
-  useEffect(() => {
-    if (currentLangVoices.length === 0) {
-      setSelectedVoiceURI('');
-      return;
-    }
-    // Check if previously selected voice exists in currentLangVoices
-    const stillExists = currentLangVoices.some(v => v.voiceURI === selectedVoiceURI);
-    if (!stillExists) {
-      // Pick first
-      setSelectedVoiceURI(currentLangVoices[0].voiceURI);
-    }
-  }, [currentLangVoices, selectedVoiceURI]);
 
   // Available languages present in voices
   const availableLangs = useMemo(() => {
@@ -207,8 +206,8 @@ export default function TextReaderPage() {
 
         // Prefetch buffer: queue lineIndex + 2 (since lineIndex + 1 was queued initially)
         const nextQueueIndex = lineIndex + 2;
-        if (nextQueueIndex < total) {
-          const nextUtterance = createUtterance(nextQueueIndex, linesToRead);
+        if (nextQueueIndex < total && createUtteranceRef.current) {
+          const nextUtterance = createUtteranceRef.current(nextQueueIndex, linesToRead);
           window.speechSynthesis.speak(nextUtterance);
         }
       }
@@ -221,6 +220,10 @@ export default function TextReaderPage() {
 
     return u;
   }, [scrollToLine]);
+
+  useEffect(() => {
+    createUtteranceRef.current = createUtterance;
+  }, [createUtterance]);
 
   // Start reading from a specific index using 2-line prefetch buffer
   const startReadingFromIndex = useCallback((startIndex: number, linesToRead: string[]) => {
@@ -290,6 +293,19 @@ export default function TextReaderPage() {
     } else {
       window.speechSynthesis.pause();
       setIsPaused(true);
+    }
+  };
+
+  // Rate change handlers
+  const handleRateChange = (newRate: number) => {
+    setRate(newRate);
+    rateRef.current = newRate;
+  };
+
+  const handleRateCommit = () => {
+    // If currently reading, restart from current line with updated rate for immediate feedback
+    if (isReadingRef.current && currentLineRef.current >= 0 && linesRef.current.length > 0) {
+      startReadingFromIndex(currentLineRef.current, linesRef.current);
     }
   };
 
@@ -381,7 +397,7 @@ export default function TextReaderPage() {
             <div className="flex items-center gap-1.5 text-xs text-gray-600 min-w-[170px] max-w-[260px]">
               <span className="font-medium text-gray-700 whitespace-nowrap">语音:</span>
               <select
-                value={selectedVoiceURI}
+                value={activeVoiceURI}
                 onChange={(e) => setSelectedVoiceURI(e.target.value)}
                 disabled={currentLangVoices.length === 0}
                 className="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-md px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none truncate w-full disabled:opacity-50"
@@ -398,19 +414,22 @@ export default function TextReaderPage() {
               </select>
             </div>
 
-            {/* 3 & 4. Rate Slider + Display */}
+            {/* 3 & 4. Rate Slider + Display (up to 4.0x) */}
             <div className="flex items-center gap-2 text-xs text-gray-600">
               <span className="font-medium text-gray-700 whitespace-nowrap">语速:</span>
               <input
                 type="range"
                 min="0.5"
-                max="2.0"
+                max="4.0"
                 step="0.1"
                 value={rate}
-                onChange={(e) => setRate(parseFloat(e.target.value))}
+                onChange={(e) => handleRateChange(parseFloat(e.target.value))}
+                onMouseUp={handleRateCommit}
+                onTouchEnd={handleRateCommit}
                 className="w-20 sm:w-24 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                title="调节朗读语速 (0.5x ~ 4.0x)"
               />
-              <span className="font-mono text-gray-800 font-medium w-9 text-right">
+              <span className="font-mono text-gray-800 font-medium w-10 text-right">
                 {rate.toFixed(1)}x
               </span>
             </div>

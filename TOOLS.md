@@ -67,7 +67,7 @@ This document provides a detailed functional description and usage guide for eve
 **Features & Usage:**
 - **Text Input & Auto-split:** Paste any multi-line text, automatically split by line breaks into readable sentences.
 - **Voice & Language Selection:** Supports Chinese (zh), Japanese (ja), and English (en) with full browser voice selection.
-- **Speed & Progress Seeking:** Adjust reading speed (0.5x ~ 2.0x) and seek to any sentence with interactive slider.
+- **Speed & Progress Seeking:** Adjust reading speed (0.5x ~ 4.0x) and seek to any sentence with interactive slider.
 - **Synchronized Highlighting & Auto-scroll:** Current sentence is highlighted and scrolled smoothly to center during reading.
 
 ## 💻 Development
