@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch, Volume2, Filter } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch, Volume2, Filter, Stamp } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -211,6 +211,14 @@ export const tools: Tool[] = [
     category: 'Text',
     icon: Filter,
     path: '/tools/url-deduplicator',
+  },
+  {
+    id: 'image-annotator',
+    name: '图片标注器',
+    description: '快速在图片上打点生成自增圆形编号标记，支持拖拽移动、双击删除与多步撤销，支持自定义底部说明文字并合成导出为 PNG。',
+    category: 'Image Processing',
+    icon: Stamp,
+    path: '/tools/image-annotator',
   },
 ];
 
