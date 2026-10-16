@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch, Volume2 } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch, Volume2, Filter } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -203,6 +203,14 @@ export const tools: Tool[] = [
     category: 'Text',
     icon: Volume2,
     path: '/tools/text-reader',
+  },
+  {
+    id: 'url-deduplicator',
+    name: 'URL 去重/剔除工具',
+    description: '从杂乱文本中批量识别、去重并剔除指定的 URL，输出干净不含被剔除项的 URL 列表并支持一键复制。',
+    category: 'Text',
+    icon: Filter,
+    path: '/tools/url-deduplicator',
   },
 ];
 
