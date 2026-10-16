@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch, Volume2, Filter, Stamp } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch, Volume2, Filter, Stamp, ListTree } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -219,6 +219,14 @@ export const tools: Tool[] = [
     category: 'Image Processing',
     icon: Stamp,
     path: '/tools/image-annotator',
+  },
+  {
+    id: 'yaml-node-editor',
+    name: 'YAML 节点编辑器',
+    description: '可视解析 YAML 节点树，支持逐节点编辑键名与键值、新增与删除、正则检索定位与一键导出下载。',
+    category: 'Development',
+    icon: ListTree,
+    path: '/tools/yaml-node-editor',
   },
 ];
 
