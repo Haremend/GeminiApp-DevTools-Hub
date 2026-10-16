@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   VolumeX,
   Sliders,
-  Type
+  Type,
+  MoveVertical
 } from 'lucide-react';
 
 type SupportedLang = 'zh' | 'ja' | 'en';
@@ -46,6 +47,35 @@ export default function TextReaderPage() {
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>('');
   const [rate, setRate] = useState<number>(1.0);
   
+  // Text display appearance settings (Font size & Spacing)
+  const [fontSize, setFontSize] = useState<number>(() => {
+    if (typeof window === 'undefined') return 16;
+    try {
+      const saved = localStorage.getItem('txt_reader_font_size');
+      if (saved) {
+        const val = parseInt(saved, 10);
+        if (!isNaN(val) && val >= 12 && val <= 36) return val;
+      }
+    } catch {
+      // Ignore
+    }
+    return 16;
+  });
+
+  const [lineSpacing, setLineSpacing] = useState<number>(() => {
+    if (typeof window === 'undefined') return 10;
+    try {
+      const saved = localStorage.getItem('txt_reader_line_spacing');
+      if (saved) {
+        const val = parseInt(saved, 10);
+        if (!isNaN(val) && val >= 4 && val <= 32) return val;
+      }
+    } catch {
+      // Ignore
+    }
+    return 10;
+  });
+
   // Playback state
   const [isReading, setIsReading] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -338,6 +368,25 @@ export default function TextReaderPage() {
     }
   };
 
+  // Appearance handlers (Font Size & Spacing)
+  const handleFontSizeChange = (val: number) => {
+    setFontSize(val);
+    try {
+      localStorage.setItem('txt_reader_font_size', val.toString());
+    } catch {
+      // Ignore
+    }
+  };
+
+  const handleLineSpacingChange = (val: number) => {
+    setLineSpacing(val);
+    try {
+      localStorage.setItem('txt_reader_line_spacing', val.toString());
+    } catch {
+      // Ignore
+    }
+  };
+
   // Click on a line in the reading view to jump
   const handleLineClick = (idx: number) => {
     if (splitLines.length === 0) return;
@@ -361,11 +410,11 @@ export default function TextReaderPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden font-sans">
       {/* Top Controls Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 shrink-0 shadow-sm z-10">
+      <header className="bg-white border-b border-gray-200 px-4 py-2.5 shrink-0 shadow-sm z-10">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           
           {/* Left Title & Status */}
-          <div className="flex items-center gap-2.5 min-w-[190px]">
+          <div className="flex items-center gap-2.5 shrink-0">
             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
               <Volume2 className="w-5 h-5" />
             </div>
@@ -375,8 +424,8 @@ export default function TextReaderPage() {
             </div>
           </div>
 
-          {/* Middle Controls (Language, Voice, Speed, Seek) */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 flex-1 justify-center max-w-4xl">
+          {/* Middle Controls (Language, Voice, Speed, Seek, Font Size, Spacing) */}
+          <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2 flex-1 justify-center max-w-5xl">
             {/* 1. Language selector */}
             <div className="flex items-center gap-1.5 text-xs text-gray-600">
               <span className="font-medium text-gray-700 whitespace-nowrap">语言:</span>
@@ -394,7 +443,7 @@ export default function TextReaderPage() {
             </div>
 
             {/* 2. Voice selector */}
-            <div className="flex items-center gap-1.5 text-xs text-gray-600 min-w-[170px] max-w-[260px]">
+            <div className="flex items-center gap-1.5 text-xs text-gray-600 min-w-[150px] max-w-[240px]">
               <span className="font-medium text-gray-700 whitespace-nowrap">语音:</span>
               <select
                 value={activeVoiceURI}
@@ -426,16 +475,16 @@ export default function TextReaderPage() {
                 onChange={(e) => handleRateChange(parseFloat(e.target.value))}
                 onMouseUp={handleRateCommit}
                 onTouchEnd={handleRateCommit}
-                className="w-20 sm:w-24 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                className="w-18 sm:w-22 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 title="调节朗读语速 (0.5x ~ 4.0x)"
               />
-              <span className="font-mono text-gray-800 font-medium w-10 text-right">
+              <span className="font-mono text-gray-800 font-medium w-9 text-right">
                 {rate.toFixed(1)}x
               </span>
             </div>
 
             {/* 5 & 6. Seek Slider + Progress Percentage */}
-            <div className="flex items-center gap-2 text-xs text-gray-600 min-w-[160px] sm:min-w-[200px]">
+            <div className="flex items-center gap-2 text-xs text-gray-600 min-w-[150px] sm:min-w-[190px]">
               <span className="font-medium text-gray-700 whitespace-nowrap">进度:</span>
               <input
                 type="range"
@@ -449,11 +498,53 @@ export default function TextReaderPage() {
                 onChange={(e) => handleSeekSliderInput(parseInt(e.target.value, 10))}
                 onMouseUp={(e) => handleSeekCommit(parseInt((e.target as HTMLInputElement).value, 10))}
                 onTouchEnd={(e) => handleSeekCommit(parseInt((e.target as HTMLInputElement).value, 10))}
-                className="w-24 sm:w-32 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-20 sm:w-28 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="拖动调整朗读行"
               />
-              <span className="font-mono text-indigo-600 font-semibold w-10 text-right">
+              <span className="font-mono text-indigo-600 font-semibold w-9 text-right">
                 {progressPercent}%
+              </span>
+            </div>
+
+            {/* 7. Font Size Slider + Display */}
+            <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2 py-1">
+              <span className="font-medium text-gray-700 whitespace-nowrap flex items-center gap-1">
+                <Type className="w-3.5 h-3.5 text-indigo-600" />
+                字号:
+              </span>
+              <input
+                type="range"
+                min="12"
+                max="32"
+                step="1"
+                value={fontSize}
+                onChange={(e) => handleFontSizeChange(parseInt(e.target.value, 10))}
+                className="w-16 sm:w-20 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                title={`调节展示文本字体大小 (12px ~ 32px，当前 ${fontSize}px)`}
+              />
+              <span className="font-mono text-gray-800 font-medium w-8 text-right">
+                {fontSize}px
+              </span>
+            </div>
+
+            {/* 8. Spacing Slider + Display */}
+            <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2 py-1">
+              <span className="font-medium text-gray-700 whitespace-nowrap flex items-center gap-1">
+                <MoveVertical className="w-3.5 h-3.5 text-indigo-600" />
+                间距:
+              </span>
+              <input
+                type="range"
+                min="4"
+                max="28"
+                step="2"
+                value={lineSpacing}
+                onChange={(e) => handleLineSpacingChange(parseInt(e.target.value, 10))}
+                className="w-16 sm:w-20 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                title={`调节展示文本行间距 (4px ~ 28px，当前 ${lineSpacing}px)`}
+              />
+              <span className="font-mono text-gray-800 font-medium w-8 text-right">
+                {lineSpacing}px
               </span>
             </div>
           </div>
@@ -553,7 +644,11 @@ export default function TextReaderPage() {
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder="粘贴你的文本（支持原始格式）..."
-                className="flex-1 w-full p-4 resize-none outline-none border border-gray-200 rounded-lg text-gray-800 text-sm leading-relaxed focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-sans shadow-inner placeholder-gray-400"
+                style={{
+                  fontSize: `${fontSize}px`,
+                  lineHeight: `${Math.max(20, Math.round(fontSize * 1.55 + lineSpacing * 0.35))}px`,
+                }}
+                className="flex-1 w-full p-4 resize-none outline-none border border-gray-200 rounded-lg text-gray-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-sans shadow-inner placeholder-gray-400 transition-all"
               />
             </div>
 
@@ -619,7 +714,12 @@ export default function TextReaderPage() {
             {/* Reading Lines Container */}
             <div 
               ref={scrollContainerRef}
-              className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2.5 bg-gray-50/50 min-h-0 divide-y divide-transparent"
+              className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50/50 min-h-0"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: `${lineSpacing}px`
+              }}
             >
               {splitLines.map((line, idx) => {
                 const isActive = idx === currentLineIndex;
@@ -631,7 +731,15 @@ export default function TextReaderPage() {
                     key={idx}
                     ref={(el) => { lineElementsRef.current[idx] = el; }}
                     onClick={() => handleLineClick(idx)}
-                    className={`group relative p-3 sm:p-4 rounded-xl transition-all duration-200 cursor-pointer text-sm sm:text-base leading-relaxed ${
+                    style={{
+                      fontSize: `${fontSize}px`,
+                      lineHeight: fontSize > 22 ? 1.55 : 1.65,
+                      paddingTop: `${Math.max(8, Math.round(fontSize * 0.45))}px`,
+                      paddingBottom: `${Math.max(8, Math.round(fontSize * 0.45))}px`,
+                      paddingLeft: '1rem',
+                      paddingRight: '1rem',
+                    }}
+                    className={`group relative rounded-xl transition-all duration-200 cursor-pointer ${
                       isActive
                         ? 'bg-amber-100/90 text-amber-950 font-semibold shadow-sm border-l-4 border-amber-500 ring-1 ring-amber-300 scale-[1.008]'
                         : isPreview
@@ -643,7 +751,13 @@ export default function TextReaderPage() {
                   >
                     <div className="flex items-start gap-3">
                       {/* Line Number Badge */}
-                      <span className={`inline-flex items-center justify-center shrink-0 w-6 h-6 rounded-md text-xs font-mono select-none ${
+                      <span 
+                        style={{
+                          fontSize: `${Math.max(11, Math.round(fontSize * 0.7))}px`,
+                          minWidth: `${Math.max(24, Math.round(fontSize * 1.35))}px`,
+                          height: `${Math.max(24, Math.round(fontSize * 1.35))}px`,
+                        }}
+                        className={`inline-flex items-center justify-center shrink-0 rounded-md font-mono select-none ${
                         isActive
                           ? 'bg-amber-500 text-white font-bold'
                           : isDone
@@ -654,13 +768,16 @@ export default function TextReaderPage() {
                       </span>
 
                       {/* Line Text */}
-                      <span className="flex-1 select-text">
+                      <span className="flex-1 select-text break-words">
                         {line}
                       </span>
 
                       {/* Status indicator on the right */}
                       {isActive && (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-200/60 px-2 py-0.5 rounded-full select-none shrink-0">
+                        <span 
+                          style={{ fontSize: `${Math.max(11, Math.round(fontSize * 0.72))}px` }}
+                          className="inline-flex items-center gap-1 font-medium text-amber-700 bg-amber-200/60 px-2 py-0.5 rounded-full select-none shrink-0"
+                        >
                           <Volume2 className="w-3.5 h-3.5 animate-pulse text-amber-600" />
                           <span>朗读中</span>
                         </span>
