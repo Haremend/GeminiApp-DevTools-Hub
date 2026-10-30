@@ -22,6 +22,23 @@ import {
 type SupportedLang = 'zh' | 'ja' | 'en';
 type TtsEngine = 'preload' | 'speechSynthesis';
 
+interface SmartVoiceItem {
+  id: string;
+  name: string;
+  role: string;
+  langGroup: string;
+}
+
+const SMART_VOICES: SmartVoiceItem[] = [
+  { id: 'zh-CN', name: '晓芳 (标准普通话)', role: '清澈女主播 · 播音质感', langGroup: '中文普通话 & 方言' },
+  { id: 'zh-TW', name: '雅婷 (台湾国语)', role: '温婉轻柔 · 舒缓亲切', langGroup: '中文普通话 & 方言' },
+  { id: 'zh-HK', name: '嘉欣 (香港粤语)', role: '地道港白 · 广播腔调', langGroup: '中文普通话 & 方言' },
+  { id: 'en-US', name: 'Emily (美式标准)', role: '通用播音 · 地道美音', langGroup: '英语口音' },
+  { id: 'en-GB', name: 'Arthur (英式典雅)', role: '英伦绅士 · 沉稳男声', langGroup: '英语口音' },
+  { id: 'ja-JP', name: '樱子 (东京自然)', role: '自然柔和 · 标准日语', langGroup: '小语种' },
+  { id: 'ko-KR', name: '智恩 (首尔流行)', role: '清晰明快 · 标准韩语', langGroup: '小语种' },
+];
+
 const LANG_CONFIG: Record<SupportedLang, { label: string; defaultCode: string; ttsCode: string }> = {
   zh: { label: '中文 (普通话)', defaultCode: 'zh-CN', ttsCode: 'zh-CN' },
   ja: { label: '日语 (日本語)', defaultCode: 'ja-JP', ttsCode: 'ja-JP' },
@@ -51,6 +68,7 @@ export default function TextReaderPage() {
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedLang, setSelectedLang] = useState<SupportedLang>('zh');
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>('');
+  const [smartVoiceId, setSmartVoiceId] = useState<string>('zh-CN');
   const [rate, setRate] = useState<number>(1.0);
   
   // Preloaded line indices set (for visual feedback)
@@ -115,6 +133,7 @@ export default function TextReaderPage() {
   const selectedVoiceURIRef = useRef<string>('');
   const rateRef = useRef<number>(1.0);
   const selectedLangRef = useRef<SupportedLang>('zh');
+  const smartVoiceIdRef = useRef<string>('zh-CN');
   const engineRef = useRef<TtsEngine>('preload');
   const enablePreloadRef = useRef<boolean>(true);
 
@@ -138,6 +157,7 @@ export default function TextReaderPage() {
     linesRef.current = splitLines;
     voicesRef.current = availableVoices;
     selectedVoiceURIRef.current = activeVoiceURI;
+    smartVoiceIdRef.current = smartVoiceId;
     rateRef.current = rate;
     selectedLangRef.current = selectedLang;
     engineRef.current = engine;
@@ -228,7 +248,7 @@ export default function TextReaderPage() {
   }, []);
 
   // Async function to fetch & cache TTS audio for a line
-  const fetchLineAudio = useCallback(async (lineIndex: number, lines: string[], lang: SupportedLang): Promise<string> => {
+  const fetchLineAudio = useCallback(async (lineIndex: number, lines: string[], voiceId: string): Promise<string> => {
     if (audioCacheRef.current.has(lineIndex)) {
       return audioCacheRef.current.get(lineIndex)!;
     }
@@ -244,8 +264,7 @@ export default function TextReaderPage() {
 
     const loadPromise = (async () => {
       try {
-        const langCode = LANG_CONFIG[lang].ttsCode;
-        const res = await fetch(`/api/tts?text=${encodeURIComponent(textToRead)}&lang=${encodeURIComponent(langCode)}`);
+        const res = await fetch(`/api/tts?text=${encodeURIComponent(textToRead)}&voice=${encodeURIComponent(voiceId)}`);
         if (!res.ok) {
           throw new Error(`TTS server responded with ${res.status}`);
         }
@@ -264,13 +283,13 @@ export default function TextReaderPage() {
   }, []);
 
   // Proactive Lookahead Preloader: Preloads next N lines ahead
-  const preloadAhead = useCallback((currentIndex: number, lines: string[], lang: SupportedLang) => {
+  const preloadAhead = useCallback((currentIndex: number, lines: string[], voiceId: string) => {
     if (!enablePreloadRef.current) return;
     const lookaheadCount = 2; // Preload next 2 lines in parallel
     for (let step = 1; step <= lookaheadCount; step++) {
       const targetIndex = currentIndex + step;
       if (targetIndex < lines.length && !audioCacheRef.current.has(targetIndex)) {
-        fetchLineAudio(targetIndex, lines, lang).catch(err => {
+        fetchLineAudio(targetIndex, lines, voiceId).catch(err => {
           console.warn(`[TextReader] Preload error at line ${targetIndex}:`, err);
         });
       }
@@ -301,15 +320,16 @@ export default function TextReaderPage() {
     setSeekSliderVal(pct);
     scrollToLine(index);
 
+    const activeVoice = smartVoiceIdRef.current;
     // Trigger lookahead preloading for upcoming lines immediately
-    preloadAhead(index, lines, selectedLangRef.current);
+    preloadAhead(index, lines, activeVoice);
 
     // Check if current line audio is already preloaded or in flight
     let audioUrl = audioCacheRef.current.get(index);
     if (!audioUrl) {
       setIsBufferingCurrent(true);
       try {
-        audioUrl = await fetchLineAudio(index, lines, selectedLangRef.current);
+        audioUrl = await fetchLineAudio(index, lines, activeVoice);
       } catch (err) {
         console.error('Failed to load audio for line', index, err);
         setIsBufferingCurrent(false);
@@ -513,6 +533,25 @@ export default function TextReaderPage() {
     }
   };
 
+  // Smart voice change (for preload engine)
+  const handleSmartVoiceChange = (newVoiceId: string) => {
+    setSmartVoiceId(newVoiceId);
+    smartVoiceIdRef.current = newVoiceId;
+    clearAudioCache();
+    if (isReadingRef.current && engineRef.current === 'preload' && currentLineRef.current >= 0 && linesRef.current.length > 0) {
+      startReadingFromIndex(currentLineRef.current, linesRef.current);
+    }
+  };
+
+  // System voice change (for speechSynthesis engine)
+  const handleSystemVoiceChange = (uri: string) => {
+    setSelectedVoiceURI(uri);
+    selectedVoiceURIRef.current = uri;
+    if (isReadingRef.current && engineRef.current === 'speechSynthesis' && currentLineRef.current >= 0 && linesRef.current.length > 0) {
+      startReadingFromIndex(currentLineRef.current, linesRef.current);
+    }
+  };
+
   // Language change
   const handleLangChange = (lang: SupportedLang) => {
     setSelectedLang(lang);
@@ -661,29 +700,56 @@ export default function TextReaderPage() {
               </button>
             </div>
 
-            {/* 2. Language selector */}
-            <div className="flex items-center gap-1.5 text-xs text-gray-600">
-              <span className="font-medium text-gray-700 whitespace-nowrap">语言:</span>
-              <select
-                value={selectedLang}
-                onChange={(e) => handleLangChange(e.target.value as SupportedLang)}
-                className="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-md px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-              >
-                <option value="zh">中文</option>
-                <option value="en">英文</option>
-                <option value="ja">日文</option>
-              </select>
-            </div>
-
-            {/* 3. System Voice selector (Only shown in Web Speech mode) */}
-            {engine === 'speechSynthesis' && (
-              <div className="flex items-center gap-1.5 text-xs text-gray-600 min-w-[140px] max-w-[200px]">
-                <span className="font-medium text-gray-700 whitespace-nowrap">音色:</span>
+            {/* 2. Voice / Actor selector (Always shown in both engines!) */}
+            {engine === 'preload' ? (
+              <div className="flex items-center gap-1.5 text-xs text-gray-600 min-w-[200px] max-w-[280px]">
+                <span className="font-medium text-gray-700 whitespace-nowrap flex items-center gap-1">
+                  <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>发音人:</span>
+                </span>
+                <select
+                  value={smartVoiceId}
+                  onChange={(e) => handleSmartVoiceChange(e.target.value)}
+                  className="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-md px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none truncate w-full cursor-pointer font-medium"
+                  title="智能预读发音角色：支持标准普通话、台湾国语、粤语及外语"
+                >
+                  <optgroup label="🇨🇳 中文普通话 & 方言">
+                    <option value="zh-CN">👩 晓芳 (标准普通话 · 清澈女主播)</option>
+                    <option value="zh-TW">👧 雅婷 (台湾国语 · 温婉轻柔女声)</option>
+                    <option value="zh-HK">👩 嘉欣 (粤语广播 · 地道香港白话)</option>
+                  </optgroup>
+                  <optgroup label="🇺🇸 🇬🇧 英语口音">
+                    <option value="en-US">👱‍♀️ Emily (美式标准 · 通用播音女声)</option>
+                    <option value="en-GB">🎩 Arthur (英式典雅 · 绅士男声)</option>
+                  </optgroup>
+                  <optgroup label="🇯🇵 🇰🇷 小语种">
+                    <option value="ja-JP">🌸 樱子 (东京自然 · 标准日语)</option>
+                    <option value="ko-KR">🌺 智恩 (首尔自然 · 清晰韩语)</option>
+                  </optgroup>
+                </select>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-xs text-gray-600 min-w-[220px] max-w-[300px]">
+                <span className="font-medium text-gray-700 whitespace-nowrap flex items-center gap-1">
+                  <Cpu className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>系统音色:</span>
+                </span>
+                <select
+                  value={selectedLang}
+                  onChange={(e) => handleLangChange(e.target.value as SupportedLang)}
+                  className="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-md px-1.5 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none shrink-0"
+                  title="按语言筛选系统内置发音人"
+                >
+                  <option value="zh">中</option>
+                  <option value="en">英</option>
+                  <option value="ja">日</option>
+                </select>
                 <select
                   value={activeVoiceURI}
-                  onChange={(e) => setSelectedVoiceURI(e.target.value)}
+                  onChange={(e) => handleSystemVoiceChange(e.target.value)}
                   disabled={currentLangVoices.length === 0}
-                  className="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-md px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none truncate w-full disabled:opacity-50"
+                  className="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-md px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none truncate flex-1 disabled:opacity-50 cursor-pointer"
+                  title="选择浏览器/系统内置的本地语音人"
                 >
                   {currentLangVoices.length > 0 ? (
                     currentLangVoices.map((v) => (

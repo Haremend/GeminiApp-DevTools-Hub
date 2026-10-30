@@ -5,7 +5,8 @@ export const runtime = 'nodejs';
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const text = searchParams.get('text');
-  const lang = searchParams.get('lang') || 'zh-CN';
+  const voice = searchParams.get('voice');
+  const lang = voice || searchParams.get('lang') || 'zh-CN';
 
   if (!text || !text.trim()) {
     return new NextResponse('Missing text', { status: 400 });
