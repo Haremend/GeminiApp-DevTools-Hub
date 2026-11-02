@@ -666,7 +666,7 @@ export default function TextReaderPage() {
   const preloadedCount = preloadedSet.size;
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-50 overflow-hidden font-sans">
+    <div className="flex flex-col h-[calc(100vh-3rem)] w-full bg-slate-50 overflow-hidden font-sans">
       {/* Top Controls Header - 分两行排布：第一行调整滑块+操作按钮，第二行语音切换 */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-2.5 shrink-0 shadow-xs z-10 w-full flex flex-col gap-2.5">
         

@@ -3,14 +3,19 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function ToolLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Tools that require full-width 100% screen occupancy without max-w-7xl constraint
+  const isFullWidthTool = pathname?.startsWith('/tools/text-reader');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -38,7 +43,7 @@ export default function ToolLayout({
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between">
+        <div className={`${isFullWidthTool ? 'w-full px-4 sm:px-6' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'} h-12 flex items-center justify-between`}>
           <Link 
             href="/" 
             className="flex items-center text-gray-600 hover:text-indigo-600 transition-colors font-medium text-sm"
@@ -51,7 +56,7 @@ export default function ToolLayout({
           </div>
         </div>
       </header>
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-6">
+      <main className={`flex-1 w-full ${isFullWidthTool ? 'p-0 min-h-0 flex flex-col pt-12' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-6'}`}>
         {children}
       </main>
     </div>
