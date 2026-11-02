@@ -417,8 +417,8 @@ export default function ImageEditorTool() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden relative">
-      <header className="h-auto py-2 sm:h-14 sm:py-0 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between px-4 bg-white shrink-0 shadow-sm z-20 gap-3 sm:gap-0">
+    <div className="flex flex-col h-[calc(100vh-3rem)] w-full bg-gray-50 overflow-hidden relative">
+      <header className="h-auto py-2 sm:h-14 sm:py-0 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 lg:px-8 bg-white shrink-0 shadow-sm z-20 gap-3 sm:gap-0">
         <div className="flex items-center gap-2 lg:gap-3 w-full sm:w-auto justify-between sm:justify-start">
           <div className="flex items-center gap-2">
             <ImageIcon className="w-5 h-5 text-indigo-600 hidden sm:block" />

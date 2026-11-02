@@ -136,7 +136,7 @@ export default function MermaidEditorPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-w-7xl mx-auto w-full p-4">
+    <div className="flex flex-col h-[calc(100vh-3rem)] w-full px-4 sm:px-6 lg:px-8 py-4">
       <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Mermaid Editor</h1>

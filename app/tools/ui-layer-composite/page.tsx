@@ -223,8 +223,8 @@ export default function UILayerCompositePage() {
   const selectedLayer = layers.find(l => l.id === selectedId);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col bg-gray-50 overflow-hidden">
-      <header className="h-14 border-b border-gray-200 flex items-center justify-between px-6 bg-white shrink-0 shadow-sm z-20">
+    <div className="flex h-[calc(100vh-3rem)] w-full flex-col bg-gray-50 overflow-hidden">
+      <header className="h-14 border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 bg-white shrink-0 shadow-sm z-20">
         <div className="flex items-center gap-3">
           <Layers className="w-5 h-5 text-indigo-600" />
           <h1 className="font-bold text-gray-800 text-lg">UI Layer Composite</h1>

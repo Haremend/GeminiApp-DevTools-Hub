@@ -43,8 +43,8 @@ export default function RemoveDuplicatesTool() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
-      <header className="h-14 border-b border-gray-200 flex items-center justify-between px-4 bg-white shrink-0 shadow-sm">
+    <div className="flex flex-col h-[calc(100vh-3rem)] w-full bg-gray-50 overflow-hidden">
+      <header className="h-14 border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 bg-white shrink-0 shadow-sm">
         <div className="flex items-center gap-2">
           <Layers className="w-5 h-5 text-indigo-600" />
           <h1 className="font-bold text-gray-800 text-lg">Remove Duplicate Lines</h1>
@@ -113,7 +113,7 @@ export default function RemoveDuplicatesTool() {
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col md:flex-row p-4 gap-4 min-h-0">
+      <div className="flex-1 flex flex-col md:flex-row p-4 sm:p-6 lg:px-8 gap-4 min-h-0">
         <div className="flex-1 flex flex-col min-h-0 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 font-medium text-sm text-gray-700">
             Input

@@ -50,7 +50,7 @@ export default function YamlFormatterTool() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto h-[calc(100vh-12rem)] flex flex-col">
+    <div className="w-full h-[calc(100vh-3rem)] px-4 sm:px-6 lg:px-8 py-4 flex flex-col">
       <div className="mb-6 flex-shrink-0">
         <h1 className="text-3xl font-bold text-gray-900">YAML Formatter</h1>
         <p className="mt-2 text-gray-600">Format YAML, remove empty lines, and sort keys alphabetically (A-Z).</p>

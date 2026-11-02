@@ -405,9 +405,9 @@ export default function ImageAnnotatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-800 flex flex-col">
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-5">
+    <div className="w-full min-h-screen bg-white text-slate-800 flex flex-col">
+      {/* Main Content Area - 100% 宽度自适应 */}
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-5">
         {/* Operation Instructions banner */}
         <div className="bg-slate-50 border border-slate-200/90 rounded-xl px-4 py-3 flex items-start sm:items-center gap-3 text-slate-600 text-sm shadow-xs">
           <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5 sm:mt-0" />

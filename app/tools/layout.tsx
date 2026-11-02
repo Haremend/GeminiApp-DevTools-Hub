@@ -15,7 +15,29 @@ export default function ToolLayout({
   const [lastScrollY, setLastScrollY] = useState(0);
 
   // Tools that require full-width 100% screen occupancy without max-w-7xl constraint
-  const fullWidthTools = ['/tools/text-reader', '/tools/yaml-node-editor'];
+  const fullWidthTools = [
+    '/tools/text-reader',
+    '/tools/yaml-node-editor',
+    '/tools/text-diff',
+    '/tools/prompt-compare',
+    '/tools/markdown-editor',
+    '/tools/mermaid-editor',
+    '/tools/plantuml-editor',
+    '/tools/image-annotator',
+    '/tools/image-editor',
+    '/tools/picture-split',
+    '/tools/ui-layer-composite',
+    '/tools/image-color-picker',
+    '/tools/url-deduplicator',
+    '/tools/remove-duplicates',
+    '/tools/code-formatter',
+    '/tools/yaml-formatter',
+    '/tools/comment-remover',
+    '/tools/template-replacer',
+    '/tools/text-breaker',
+    '/tools/text-merger',
+    '/tools/text-split',
+  ];
   const isFullWidthTool = fullWidthTools.some(tool => pathname?.startsWith(tool));
 
   useEffect(() => {
@@ -44,7 +66,7 @@ export default function ToolLayout({
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}
       >
-        <div className={`${isFullWidthTool ? 'w-full px-4 sm:px-6' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'} h-12 flex items-center justify-between`}>
+        <div className={`${isFullWidthTool ? 'w-full px-4 sm:px-6 lg:px-8' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'} h-12 flex items-center justify-between`}>
           <Link 
             href="/" 
             className="flex items-center text-gray-600 hover:text-indigo-600 transition-colors font-medium text-sm"

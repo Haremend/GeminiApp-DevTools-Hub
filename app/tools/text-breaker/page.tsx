@@ -58,7 +58,7 @@ export default function TextBreakerPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-w-7xl mx-auto w-full p-4">
+    <div className="flex flex-col h-[calc(100vh-3rem)] w-full px-4 sm:px-6 lg:px-8 py-4">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <WrapText className="w-6 h-6 text-indigo-600" />

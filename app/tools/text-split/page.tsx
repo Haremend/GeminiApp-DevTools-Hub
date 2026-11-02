@@ -24,7 +24,7 @@ export default function TextSplitPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen max-w-5xl mx-auto w-full p-4 sm:p-6 lg:p-8">
+    <div className="flex flex-col min-h-[calc(100vh-3rem)] w-full p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-8 shrink-0">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">

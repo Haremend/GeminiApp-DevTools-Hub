@@ -75,7 +75,7 @@ export default function PlantUmlEditorTool() {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto h-[calc(100vh-8rem)] flex flex-col">
+    <div className="w-full h-[calc(100vh-3rem)] px-4 sm:px-6 lg:px-8 py-4 flex flex-col">
       <div className="mb-6 flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">PlantUML Editor</h1>

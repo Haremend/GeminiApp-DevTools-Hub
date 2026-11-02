@@ -203,7 +203,7 @@ export default function UrlDeduplicatorPage() {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 relative pb-16">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 space-y-6 relative pb-16">
       {/* 头部标题与操作区 */}
       <header className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-center gap-3">

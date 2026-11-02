@@ -131,7 +131,7 @@ greet('World');
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-w-7xl mx-auto w-full p-4">
+    <div className="flex flex-col h-[calc(100vh-3rem)] w-full px-4 sm:px-6 lg:px-8 py-5">
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Markdown Editor</h1>
         <p className="text-gray-500 text-sm">Write and preview Markdown in real-time</p>
