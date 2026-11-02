@@ -15,7 +15,6 @@ import {
   MoveVertical,
   Zap,
   Cpu,
-  Radio,
   Loader2
 } from 'lucide-react';
 
@@ -164,18 +163,32 @@ export default function TextReaderPage() {
     enablePreloadRef.current = enablePreload;
   });
 
-  // Initialize Audio element
+  // Initialize Audio element with browser degradation check
   useEffect(() => {
-    const audio = new Audio();
-    audio.preload = 'auto';
-    audioRef.current = audio;
+    if (typeof window === 'undefined') return;
+    let audio: HTMLAudioElement | null = null;
+    try {
+      if (typeof Audio !== 'undefined') {
+        audio = new Audio();
+        audio.preload = 'auto';
+        audioRef.current = audio;
+      } else {
+        // Fallback: If Audio element is not supported by the browser, degrade to native SpeechSynthesis
+        setEngine('speechSynthesis');
+      }
+    } catch (e) {
+      console.warn('Audio constructor not supported, degrading to system speech:', e);
+      setEngine('speechSynthesis');
+    }
 
     const cache = audioCacheRef.current;
     const loadingMap = audioLoadingMapRef.current;
 
     return () => {
-      audio.pause();
-      audio.src = '';
+      if (audio) {
+        audio.pause();
+        audio.src = '';
+      }
       // Clean up cached blob URLs to prevent memory leak
       cache.forEach(url => {
         try {
@@ -282,9 +295,9 @@ export default function TextReaderPage() {
     return loadPromise;
   }, []);
 
-  // Proactive Lookahead Preloader: Preloads next N lines ahead
+  // Proactive Lookahead Preloader: Preloads next N lines ahead (auto degrades if Audio unsupported)
   const preloadAhead = useCallback((currentIndex: number, lines: string[], voiceId: string) => {
-    if (!enablePreloadRef.current) return;
+    if (!enablePreloadRef.current || typeof window === 'undefined' || typeof Audio === 'undefined') return;
     const lookaheadCount = 2; // Preload next 2 lines in parallel
     for (let step = 1; step <= lookaheadCount; step++) {
       const targetIndex = currentIndex + step;
@@ -295,84 +308,6 @@ export default function TextReaderPage() {
       }
     }
   }, [fetchLineAudio]);
-
-  // Play line with Preload Engine
-  const playLineWithPreload = useCallback(async (index: number, lines: string[], sessionId: number) => {
-    if (index >= lines.length) {
-      // Completed reading all lines
-      setProgressPercent(100);
-      setSeekSliderVal(100);
-      setCurrentLineIndex(-1);
-      setIsReading(false);
-      setIsPaused(false);
-      setIsBufferingCurrent(false);
-      return;
-    }
-
-    if (!isReadingRef.current || sessionId !== activeSessionIdRef.current) {
-      return;
-    }
-
-    setCurrentLineIndex(index);
-    const total = lines.length;
-    const pct = Math.round((index / total) * 100);
-    setProgressPercent(pct);
-    setSeekSliderVal(pct);
-    scrollToLine(index);
-
-    const activeVoice = smartVoiceIdRef.current;
-    // Trigger lookahead preloading for upcoming lines immediately
-    preloadAhead(index, lines, activeVoice);
-
-    // Check if current line audio is already preloaded or in flight
-    let audioUrl = audioCacheRef.current.get(index);
-    if (!audioUrl) {
-      setIsBufferingCurrent(true);
-      try {
-        audioUrl = await fetchLineAudio(index, lines, activeVoice);
-      } catch (err) {
-        console.error('Failed to load audio for line', index, err);
-        setIsBufferingCurrent(false);
-        // Fallback: move to next line after brief delay
-        setTimeout(() => {
-          if (isReadingRef.current && sessionId === activeSessionIdRef.current) {
-            playLineWithPreload(index + 1, lines, sessionId);
-          }
-        }, 1000);
-        return;
-      }
-      setIsBufferingCurrent(false);
-    }
-
-    if (!isReadingRef.current || sessionId !== activeSessionIdRef.current || !audioRef.current) {
-      return;
-    }
-
-    const audio = audioRef.current;
-    audio.src = audioUrl;
-    audio.playbackRate = rateRef.current;
-
-    // Handle line completion
-    audio.onended = () => {
-      if (!isReadingRef.current || sessionId !== activeSessionIdRef.current) return;
-      // Seamless jump to next line: next line is ALREADY cached in memory, 0ms pause!
-      playLineWithPreload(index + 1, lines, sessionId);
-    };
-
-    audio.onerror = (e) => {
-      console.warn('Audio playback error at line', index, e);
-      if (isReadingRef.current && sessionId === activeSessionIdRef.current) {
-        // Skip ahead if playback fails
-        playLineWithPreload(index + 1, lines, sessionId);
-      }
-    };
-
-    try {
-      await audio.play();
-    } catch (e) {
-      console.warn('Audio play request interrupted:', e);
-    }
-  }, [fetchLineAudio, preloadAhead, scrollToLine]);
 
   // Web Speech API fallback player
   const playLineWithWebSpeech = useCallback((index: number, lines: string[], sessionId: number) => {
@@ -422,6 +357,95 @@ export default function TextReaderPage() {
 
     window.speechSynthesis.speak(utterance);
   }, [scrollToLine]);
+
+  // Play line with Preload Engine
+  const playLineWithPreload = useCallback(async (index: number, lines: string[], sessionId: number) => {
+    if (index >= lines.length) {
+      // Completed reading all lines
+      setProgressPercent(100);
+      setSeekSliderVal(100);
+      setCurrentLineIndex(-1);
+      setIsReading(false);
+      setIsPaused(false);
+      setIsBufferingCurrent(false);
+      return;
+    }
+
+    if (!isReadingRef.current || sessionId !== activeSessionIdRef.current) {
+      return;
+    }
+
+    setCurrentLineIndex(index);
+    const total = lines.length;
+    const pct = Math.round((index / total) * 100);
+    setProgressPercent(pct);
+    setSeekSliderVal(pct);
+    scrollToLine(index);
+
+    // If browser doesn't support HTML5 Audio element, degrade smoothly to Web Speech API
+    if (!audioRef.current || typeof Audio === 'undefined') {
+      playLineWithWebSpeech(index, lines, sessionId);
+      return;
+    }
+
+    const activeVoice = smartVoiceIdRef.current;
+    // Trigger lookahead preloading for upcoming lines immediately
+    preloadAhead(index, lines, activeVoice);
+
+    // Check if current line audio is already preloaded or in flight
+    let audioUrl = audioCacheRef.current.get(index);
+    if (!audioUrl) {
+      setIsBufferingCurrent(true);
+      try {
+        audioUrl = await fetchLineAudio(index, lines, activeVoice);
+      } catch (err) {
+        console.error('Failed to load audio for line', index, err);
+        setIsBufferingCurrent(false);
+        // Fallback: degrade to Web Speech single-line reading if available
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          playLineWithWebSpeech(index, lines, sessionId);
+          return;
+        }
+        // Fallback: move to next line after brief delay
+        setTimeout(() => {
+          if (isReadingRef.current && sessionId === activeSessionIdRef.current) {
+            playLineWithPreload(index + 1, lines, sessionId);
+          }
+        }, 1000);
+        return;
+      }
+      setIsBufferingCurrent(false);
+    }
+
+    if (!isReadingRef.current || sessionId !== activeSessionIdRef.current || !audioRef.current) {
+      return;
+    }
+
+    const audio = audioRef.current;
+    audio.src = audioUrl;
+    audio.playbackRate = rateRef.current;
+
+    // Handle line completion
+    audio.onended = () => {
+      if (!isReadingRef.current || sessionId !== activeSessionIdRef.current) return;
+      // Seamless jump to next line: next line is ALREADY cached in memory, 0ms pause!
+      playLineWithPreload(index + 1, lines, sessionId);
+    };
+
+    audio.onerror = (e) => {
+      console.warn('Audio playback error at line', index, e);
+      if (isReadingRef.current && sessionId === activeSessionIdRef.current) {
+        // Skip ahead if playback fails
+        playLineWithPreload(index + 1, lines, sessionId);
+      }
+    };
+
+    try {
+      await audio.play();
+    } catch (e) {
+      console.warn('Audio play request interrupted:', e);
+    }
+  }, [fetchLineAudio, playLineWithWebSpeech, preloadAhead, scrollToLine]);
 
   // Start reading from a specific index
   const startReadingFromIndex = useCallback((startIndex: number, linesToRead: string[]) => {
@@ -642,155 +666,16 @@ export default function TextReaderPage() {
   const preloadedCount = preloadedSet.size;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden font-sans">
-      {/* Top Controls Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-2.5 shrink-0 shadow-sm z-10">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          
-          {/* Left Title & Status */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-              <Volume2 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-bold text-gray-900 text-base leading-tight">文本阅读器</h1>
-                {engine === 'preload' && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded">
-                    <Zap className="w-3 h-3 text-emerald-600 fill-current" />
-                    下一行秒开预读
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-gray-500">逐行朗读 · 智能预载 · 零卡顿连续播放</p>
-            </div>
-          </div>
-
-          {/* Middle Controls (Engine, Language, Voice, Speed, Seek, Font Size, Spacing) */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 flex-1 justify-center max-w-5xl">
-            
-            {/* 1. Engine Selector: Preload vs Web Speech */}
-            <div className="flex items-center gap-1 text-xs bg-gray-100 p-0.5 rounded-lg border border-gray-200">
-              <button
-                type="button"
-                onClick={() => handleEngineChange('preload')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium ${
-                  engine === 'preload'
-                    ? 'bg-white text-indigo-700 shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                title="智能预读引擎：提前在后台缓冲下一行音频，换行0等待，听感连贯自然"
-              >
-                <Zap className="w-3 h-3 text-amber-500 fill-current" />
-                <span>智能预读 (推荐)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleEngineChange('speechSynthesis')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium ${
-                  engine === 'speechSynthesis'
-                    ? 'bg-white text-indigo-700 shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                title="系统语音引擎：使用浏览器内置 SpeechSynthesis API"
-              >
-                <Cpu className="w-3 h-3 text-gray-500" />
-                <span>系统语音</span>
-              </button>
-            </div>
-
-            {/* 2. Voice / Actor selector (Always shown in both engines!) */}
-            {engine === 'preload' ? (
-              <div className="flex items-center gap-1.5 text-xs text-gray-600 min-w-[200px] max-w-[280px]">
-                <span className="font-medium text-gray-700 whitespace-nowrap flex items-center gap-1">
-                  <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>发音人:</span>
-                </span>
-                <select
-                  value={smartVoiceId}
-                  onChange={(e) => handleSmartVoiceChange(e.target.value)}
-                  className="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-md px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none truncate w-full cursor-pointer font-medium"
-                  title="智能预读发音角色：支持标准普通话、台湾国语、粤语及外语"
-                >
-                  <optgroup label="🇨🇳 中文普通话 & 方言">
-                    <option value="zh-CN">👩 晓芳 (标准普通话 · 清澈女主播)</option>
-                    <option value="zh-TW">👧 雅婷 (台湾国语 · 温婉轻柔女声)</option>
-                    <option value="zh-HK">👩 嘉欣 (粤语广播 · 地道香港白话)</option>
-                  </optgroup>
-                  <optgroup label="🇺🇸 🇬🇧 英语口音">
-                    <option value="en-US">👱‍♀️ Emily (美式标准 · 通用播音女声)</option>
-                    <option value="en-GB">🎩 Arthur (英式典雅 · 绅士男声)</option>
-                  </optgroup>
-                  <optgroup label="🇯🇵 🇰🇷 小语种">
-                    <option value="ja-JP">🌸 樱子 (东京自然 · 标准日语)</option>
-                    <option value="ko-KR">🌺 智恩 (首尔自然 · 清晰韩语)</option>
-                  </optgroup>
-                </select>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 text-xs text-gray-600 min-w-[220px] max-w-[300px]">
-                <span className="font-medium text-gray-700 whitespace-nowrap flex items-center gap-1">
-                  <Cpu className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>系统音色:</span>
-                </span>
-                <select
-                  value={selectedLang}
-                  onChange={(e) => handleLangChange(e.target.value as SupportedLang)}
-                  className="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-md px-1.5 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none shrink-0"
-                  title="按语言筛选系统内置发音人"
-                >
-                  <option value="zh">中</option>
-                  <option value="en">英</option>
-                  <option value="ja">日</option>
-                </select>
-                <select
-                  value={activeVoiceURI}
-                  onChange={(e) => handleSystemVoiceChange(e.target.value)}
-                  disabled={currentLangVoices.length === 0}
-                  className="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-md px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none truncate flex-1 disabled:opacity-50 cursor-pointer"
-                  title="选择浏览器/系统内置的本地语音人"
-                >
-                  {currentLangVoices.length > 0 ? (
-                    currentLangVoices.map((v) => (
-                      <option key={v.voiceURI} value={v.voiceURI} title={`${v.name} (${v.lang})`}>
-                        {v.name}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="">(系统暂无对应语音)</option>
-                  )}
-                </select>
-              </div>
-            )}
-
-            {/* Preload Toggle (in Preload Engine) */}
-            {engine === 'preload' && (
-              <label 
-                className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer bg-emerald-50/70 border border-emerald-200/80 px-2 py-1 rounded-md hover:bg-emerald-50"
-                title="开启后，在朗读当前行的同时，后台异步下载下 1~2 行音频，行间切换 0 延迟"
-              >
-                <input
-                  type="checkbox"
-                  checked={enablePreload}
-                  onChange={(e) => setEnablePreload(e.target.checked)}
-                  className="rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer accent-emerald-600"
-                />
-                <span className="font-medium flex items-center gap-1">
-                  <Radio className="w-3 h-3 text-emerald-600 animate-pulse" />
-                  预载下一行
-                </span>
-                {preloadedCount > 0 && viewMode === 'reading' && (
-                  <span className="text-[10px] bg-emerald-200/70 text-emerald-800 px-1 py-0.2 rounded font-mono">
-                    已缓{preloadedCount}行
-                  </span>
-                )}
-              </label>
-            )}
-
-            {/* 4. Rate Slider + Display (0.5x ~ 3.0x) */}
-            <div className="flex items-center gap-1.5 text-xs text-gray-600">
-              <span className="font-medium text-gray-700 whitespace-nowrap">语速:</span>
+    <div className="flex flex-col h-screen w-full bg-slate-50 overflow-hidden font-sans">
+      {/* Top Controls Header - 分两行排布：第一行调整滑块+操作按钮，第二行语音切换 */}
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-2.5 shrink-0 shadow-xs z-10 w-full flex flex-col gap-2.5">
+        
+        {/* 第一行：拉动的调整按钮（滑块） + 右侧核心操作按钮 */}
+        <div className="w-full flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
+            {/* 1. 语速滑块 */}
+            <div className="flex items-center gap-1.5 text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
+              <span className="font-medium text-slate-700 whitespace-nowrap">语速:</span>
               <input
                 type="range"
                 min="0.5"
@@ -800,17 +685,17 @@ export default function TextReaderPage() {
                 onChange={(e) => handleRateChange(parseFloat(e.target.value))}
                 onMouseUp={handleRateCommit}
                 onTouchEnd={handleRateCommit}
-                className="w-16 sm:w-20 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                className="w-16 sm:w-20 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 title="调节朗读语速 (0.5x ~ 3.0x)"
               />
-              <span className="font-mono text-gray-800 font-medium w-8 text-right">
+              <span className="font-mono text-slate-800 font-medium w-8 text-right">
                 {rate.toFixed(1)}x
               </span>
             </div>
 
-            {/* 5. Seek Slider + Progress Percentage */}
-            <div className="flex items-center gap-1.5 text-xs text-gray-600 min-w-[140px] sm:min-w-[170px]">
-              <span className="font-medium text-gray-700 whitespace-nowrap">进度:</span>
+            {/* 2. 进度滑块 */}
+            <div className="flex items-center gap-1.5 text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1 min-w-[140px] sm:min-w-[170px]">
+              <span className="font-medium text-slate-700 whitespace-nowrap">进度:</span>
               <input
                 type="range"
                 min="0"
@@ -821,7 +706,7 @@ export default function TextReaderPage() {
                 onChange={(e) => handleSeekSliderInput(parseInt(e.target.value, 10))}
                 onMouseUp={(e) => handleSeekCommit(parseInt((e.target as HTMLInputElement).value, 10))}
                 onTouchEnd={(e) => handleSeekCommit(parseInt((e.target as HTMLInputElement).value, 10))}
-                className="w-18 sm:w-24 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-18 sm:w-24 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="拖动调整朗读行"
               />
               <span className="font-mono text-indigo-600 font-semibold w-8 text-right">
@@ -829,9 +714,9 @@ export default function TextReaderPage() {
               </span>
             </div>
 
-            {/* 6. Font Size Slider + Display */}
-            <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2 py-1">
-              <span className="font-medium text-gray-700 whitespace-nowrap flex items-center gap-1">
+            {/* 3. 字号滑块 */}
+            <div className="flex items-center gap-1.5 text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
+              <span className="font-medium text-slate-700 whitespace-nowrap flex items-center gap-1">
                 <Type className="w-3.5 h-3.5 text-indigo-600" />
                 字号:
               </span>
@@ -842,17 +727,17 @@ export default function TextReaderPage() {
                 step="1"
                 value={fontSize}
                 onChange={(e) => handleFontSizeChange(parseInt(e.target.value, 10))}
-                className="w-14 sm:w-18 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                className="w-14 sm:w-18 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 title={`调节展示文本字体大小 (12px ~ 32px，当前 ${fontSize}px)`}
               />
-              <span className="font-mono text-gray-800 font-medium w-8 text-right">
+              <span className="font-mono text-slate-800 font-medium w-8 text-right">
                 {fontSize}px
               </span>
             </div>
 
-            {/* 7. Spacing Slider + Display */}
-            <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2 py-1">
-              <span className="font-medium text-gray-700 whitespace-nowrap flex items-center gap-1">
+            {/* 4. 间距滑块 */}
+            <div className="flex items-center gap-1.5 text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
+              <span className="font-medium text-slate-700 whitespace-nowrap flex items-center gap-1">
                 <MoveVertical className="w-3.5 h-3.5 text-indigo-600" />
                 间距:
               </span>
@@ -863,22 +748,22 @@ export default function TextReaderPage() {
                 step="2"
                 value={lineSpacing}
                 onChange={(e) => handleLineSpacingChange(parseInt(e.target.value, 10))}
-                className="w-14 sm:w-18 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                className="w-14 sm:w-18 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 title={`调节展示文本行间距 (4px ~ 28px，当前 ${lineSpacing}px)`}
               />
-              <span className="font-mono text-gray-800 font-medium w-7 text-right">
+              <span className="font-mono text-slate-800 font-medium w-7 text-right">
                 {lineSpacing}px
               </span>
             </div>
           </div>
 
-          {/* Right Action Buttons */}
-          <div className="flex items-center gap-2">
+          {/* 右侧核心操作按钮 */}
+          <div className="flex items-center gap-2 shrink-0">
             {viewMode === 'reading' && (
               <>
                 <button
                   onClick={handleTogglePause}
-                  className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+                  className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium cursor-pointer"
                   title={isPaused ? '恢复朗读' : '暂停朗读'}
                 >
                   {isPaused ? <Play className="w-3.5 h-3.5 text-indigo-600 fill-current" /> : <Pause className="w-3.5 h-3.5 text-amber-600 fill-current" />}
@@ -887,7 +772,7 @@ export default function TextReaderPage() {
 
                 <button
                   onClick={handleStop}
-                  className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center gap-1.5 text-xs font-semibold shadow-sm cursor-pointer"
+                  className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center gap-1.5 text-xs font-semibold shadow-xs cursor-pointer"
                   title="终止朗读并返回编辑界面"
                 >
                   <Square className="w-3.5 h-3.5 fill-current" />
@@ -900,121 +785,194 @@ export default function TextReaderPage() {
               <button
                 onClick={handleStart}
                 disabled={!inputText.trim()}
-                className={`px-4 py-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-semibold shadow-sm cursor-pointer ${
+                className={`px-4 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold shadow-xs cursor-pointer ${
                   inputText.trim()
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    ? 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`}
-                title="开始逐行预载与朗读"
+                title="开始逐行朗读"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>开始阅读</span>
               </button>
             )}
           </div>
+        </div>
 
+        {/* 第二行：语音切换的内容（引擎选择 + 角色/发音人选择） */}
+        <div className="w-full flex flex-wrap items-center gap-x-3 gap-y-2 pt-2 border-t border-slate-100 text-xs">
+          {/* 1. 引擎选择 */}
+          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+            <button
+              type="button"
+              onClick={() => handleEngineChange('preload')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium cursor-pointer ${
+                engine === 'preload'
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="智能预读引擎：自动在后台预取下一行音频，换行0延迟停顿"
+            >
+              <Zap className="w-3 h-3 text-amber-500 fill-current" />
+              <span>智能预读 (推荐)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleEngineChange('speechSynthesis')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium cursor-pointer ${
+                engine === 'speechSynthesis'
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="系统语音引擎：使用浏览器内置 SpeechSynthesis API"
+            >
+              <Cpu className="w-3 h-3 text-slate-500" />
+              <span>系统语音</span>
+            </button>
+          </div>
+
+          {/* 2. 发音人 / 语音切换 */}
+          {engine === 'preload' ? (
+            <div className="flex items-center gap-1.5 text-slate-600 min-w-[200px] max-w-[320px]">
+              <span className="font-medium text-slate-700 whitespace-nowrap flex items-center gap-1">
+                <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
+                <span>发音人:</span>
+              </span>
+              <select
+                value={smartVoiceId}
+                onChange={(e) => handleSmartVoiceChange(e.target.value)}
+                className="bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-md px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none truncate w-full cursor-pointer font-medium"
+                title="智能预读发音角色：支持标准普通话、台湾国语、粤语及外语"
+              >
+                <optgroup label="🇨🇳 中文普通话 & 方言">
+                  <option value="zh-CN">👩 晓芳 (标准普通话 · 清澈女主播)</option>
+                  <option value="zh-TW">👧 雅婷 (台湾国语 · 温婉轻柔女声)</option>
+                  <option value="zh-HK">👩 嘉欣 (粤语广播 · 地道香港白话)</option>
+                </optgroup>
+                <optgroup label="🇺🇸 🇬🇧 英语口音">
+                  <option value="en-US">👱‍♀️ Emily (美式标准 · 通用播音女声)</option>
+                  <option value="en-GB">🎩 Arthur (英式典雅 · 绅士男声)</option>
+                </optgroup>
+                <optgroup label="🇯🇵 🇰🇷 小语种">
+                  <option value="ja-JP">🌸 樱子 (东京自然 · 标准日语)</option>
+                  <option value="ko-KR">🌺 智恩 (首尔自然 · 清晰韩语)</option>
+                </optgroup>
+              </select>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 text-slate-600 min-w-[240px] max-w-[340px]">
+              <span className="font-medium text-slate-700 whitespace-nowrap flex items-center gap-1">
+                <Cpu className="w-3.5 h-3.5 text-indigo-600" />
+                <span>系统音色:</span>
+              </span>
+              <select
+                value={selectedLang}
+                onChange={(e) => handleLangChange(e.target.value as SupportedLang)}
+                className="bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-md px-1.5 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none shrink-0 cursor-pointer"
+                title="按语言筛选系统内置发音人"
+              >
+                <option value="zh">中</option>
+                <option value="en">英</option>
+                <option value="ja">日</option>
+              </select>
+              <select
+                value={activeVoiceURI}
+                onChange={(e) => handleSystemVoiceChange(e.target.value)}
+                disabled={currentLangVoices.length === 0}
+                className="bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-md px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none truncate flex-1 disabled:opacity-50 cursor-pointer"
+                title="选择浏览器/系统内置的本地语音人"
+              >
+                {currentLangVoices.length > 0 ? (
+                  currentLangVoices.map((v) => (
+                    <option key={v.voiceURI} value={v.voiceURI} title={`${v.name} (${v.lang})`}>
+                      {v.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">(系统暂无对应语音)</option>
+                )}
+              </select>
+            </div>
+          )}
         </div>
       </header>
 
       {/* Warning banner if browser doesn't support Web Speech and system engine is picked */}
       {!speechSupported && engine === 'speechSynthesis' && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-800 flex items-center justify-center gap-2">
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-800 flex items-center justify-center gap-2 shrink-0">
           <VolumeX className="w-4 h-4 text-amber-600 shrink-0" />
           <span>您的浏览器环境不支持 Web Speech API，建议切换为上方「智能预读」引擎体验。</span>
         </div>
       )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 overflow-hidden flex flex-col min-h-0">
+      {/* Main Content Area - 100% 宽度占用，根据浏览器宽度自适应 */}
+      <main className="flex-1 w-full p-3 sm:p-4 lg:p-6 overflow-hidden flex flex-col min-h-0">
         
         {/* CARD 1: 编辑态 */}
         {viewMode === 'edit' && (
-          <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-0">
+          <div className="flex-1 w-full flex flex-col bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden min-h-0">
             {/* Card Header */}
-            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+            <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-indigo-600" />
-                <span className="font-semibold text-gray-800 text-sm">来源文本</span>
-                <span className="text-xs text-gray-400">（粘贴待朗读文本，按换行自动分行）</span>
+                <span className="font-semibold text-slate-800 text-sm">来源文本</span>
+                <span className="text-xs text-slate-400 hidden sm:inline">（粘贴待朗读文本，按换行自动分行）</span>
               </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
+              <div className="flex items-center gap-3 text-xs text-slate-500">
                 <button
                   onClick={() => setInputText(SAMPLE_TEXT)}
-                  className="hover:text-indigo-600 text-gray-600 flex items-center gap-1 transition-colors cursor-pointer"
+                  className="hover:text-indigo-600 text-slate-600 flex items-center gap-1 transition-colors cursor-pointer"
                   title="填入古诗示例文本"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
                   <span>填入示例</span>
                 </button>
-                <span className="text-gray-300">|</span>
+                <span className="text-slate-300">|</span>
                 <button
                   onClick={() => setInputText('')}
-                  className="hover:text-red-600 text-gray-500 transition-colors cursor-pointer"
+                  className="hover:text-red-600 text-slate-500 transition-colors cursor-pointer"
                   title="清空文本"
                 >
                   清空
                 </button>
-                <span className="text-gray-300">|</span>
-                <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-600 font-mono">
+                <span className="text-slate-300">|</span>
+                <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-mono">
                   {lineCount} 行 · {inputText.length} 字
                 </span>
               </div>
             </div>
 
-            {/* Textarea */}
-            <div className="flex-1 p-4 relative min-h-0 flex flex-col">
+            {/* Textarea - 100% 占满宽度和高度，完全自适应浏览器尺寸 */}
+            <div className="flex-1 w-full min-h-0 p-0 flex flex-col">
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="粘贴你的文本（支持原始格式）..."
+                placeholder="在此粘贴或输入待朗读文本（支持长文本，换行自动切分为逐行朗读卡片）..."
                 style={{
                   fontSize: `${fontSize}px`,
                   lineHeight: `${Math.max(20, Math.round(fontSize * 1.55 + lineSpacing * 0.35))}px`,
                 }}
-                className="flex-1 w-full p-4 resize-none outline-none border border-gray-200 rounded-lg text-gray-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-sans shadow-inner placeholder-gray-400 transition-all"
+                className="flex-1 w-full p-4 sm:p-6 resize-none outline-none border-0 text-slate-800 focus:ring-0 font-sans shadow-none placeholder-slate-400 transition-all overflow-y-auto"
               />
-            </div>
-
-            {/* Bottom helper */}
-            <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
-                  <Zap className="w-3.5 h-3.5 fill-current" />
-                  已启用智能预载技术
-                </span>
-                <span className="text-gray-400">·</span>
-                <span>当前行朗读时会自动在后台预拉取下一行音频，杜绝行间延迟停顿</span>
-              </div>
-              <button
-                onClick={handleStart}
-                disabled={!inputText.trim()}
-                className={`px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
-                  inputText.trim() 
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm' 
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <Play className="w-3 h-3 fill-current" />
-                <span>立即朗读</span>
-              </button>
             </div>
           </div>
         )}
 
         {/* CARD 2: 朗读态 */}
         {viewMode === 'reading' && (
-          <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-0">
+          <div className="flex-1 w-full flex flex-col bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden min-h-0">
             {/* Card Header */}
-            <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
+            <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-2.5 w-2.5">
                     {isReading && !isPaused && (
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                     )}
-                    <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isReading ? (isPaused ? 'bg-amber-500' : 'bg-indigo-600') : 'bg-gray-400'}`}></span>
+                    <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isReading ? (isPaused ? 'bg-amber-500' : 'bg-indigo-600') : 'bg-slate-400'}`}></span>
                   </span>
-                  <span className="font-semibold text-gray-900 text-sm flex items-center gap-1.5">
+                  <span className="font-semibold text-slate-900 text-sm flex items-center gap-1.5">
                     {isReading ? (isPaused ? '已暂停' : '朗读中') : '朗读完成'}
                     {isBufferingCurrent && (
                       <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-normal">
@@ -1025,25 +983,18 @@ export default function TextReaderPage() {
                   </span>
                 </div>
                 
-                <span className="text-xs text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full font-medium">
+                <span className="text-xs text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full font-medium">
                   {currentLineIndex >= 0 ? `第 ${currentLineIndex + 1} / ${splitLines.length} 行` : `共 ${splitLines.length} 行`}
                 </span>
-
-                {engine === 'preload' && enablePreload && (
-                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                    <Zap className="w-3 h-3 text-emerald-600 fill-current" />
-                    下一行预载管线已就绪
-                  </span>
-                )}
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 hidden sm:inline">
-                  提示：点击任意行即可直接跳转
+                <span className="text-xs text-slate-400 hidden sm:inline">
+                  提示：点击任意行直接跳转
                 </span>
                 <button
                   onClick={handleStop}
-                  className="px-2.5 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>返回编辑</span>
@@ -1051,10 +1002,10 @@ export default function TextReaderPage() {
               </div>
             </div>
 
-            {/* Reading Lines Container */}
+            {/* Reading Lines Container - 100% 占满宽度 */}
             <div 
               ref={scrollContainerRef}
-              className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50/50 min-h-0"
+              className="flex-1 w-full overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-50/50 min-h-0"
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -1078,20 +1029,20 @@ export default function TextReaderPage() {
                       lineHeight: fontSize > 22 ? 1.55 : 1.65,
                       paddingTop: `${Math.max(8, Math.round(fontSize * 0.45))}px`,
                       paddingBottom: `${Math.max(8, Math.round(fontSize * 0.45))}px`,
-                      paddingLeft: '1rem',
-                      paddingRight: '1rem',
+                      paddingLeft: '1.25rem',
+                      paddingRight: '1.25rem',
                     }}
-                    className={`group relative rounded-xl transition-all duration-200 cursor-pointer ${
+                    className={`group relative rounded-xl transition-all duration-200 cursor-pointer w-full ${
                       isActive
-                        ? 'bg-amber-100/90 text-amber-950 font-semibold shadow-sm border-l-4 border-amber-500 ring-1 ring-amber-300 scale-[1.008]'
+                        ? 'bg-amber-100/90 text-amber-950 font-semibold shadow-xs border-l-4 border-amber-500 ring-1 ring-amber-300'
                         : isPreview
                         ? 'bg-indigo-50/70 border-l-4 border-indigo-400 text-indigo-900 font-medium'
                         : isDone
-                        ? 'bg-white text-gray-500 hover:bg-gray-100/80 border-l-4 border-transparent'
-                        : 'bg-white text-gray-800 hover:bg-gray-100/80 hover:shadow-xs border-l-4 border-transparent'
+                        ? 'bg-white text-slate-500 hover:bg-slate-100/80 border-l-4 border-transparent'
+                        : 'bg-white text-slate-800 hover:bg-slate-100/80 hover:shadow-xs border-l-4 border-transparent'
                     }`}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3 w-full">
                       {/* Line Number Badge */}
                       <span 
                         style={{
@@ -1104,7 +1055,7 @@ export default function TextReaderPage() {
                           ? 'bg-amber-500 text-white font-bold'
                           : isDone
                           ? 'bg-emerald-50 text-emerald-600 font-medium'
-                          : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200 group-hover:text-gray-600'
+                          : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200 group-hover:text-slate-600'
                       }`}>
                         {idx + 1}
                       </span>
@@ -1148,11 +1099,11 @@ export default function TextReaderPage() {
               })}
             </div>
 
-            {/* Bottom Progress Bar */}
-            <div className="p-3 bg-white border-t border-gray-200 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
+            {/* Bottom Progress Bar - 100% 宽度 */}
+            <div className="p-3 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 w-full shrink-0">
               <div className="flex items-center gap-3">
-                <span className="font-medium text-gray-700">整体进度：</span>
-                <div className="w-40 sm:w-64 bg-gray-200 h-2 rounded-full overflow-hidden">
+                <span className="font-medium text-slate-700">整体进度：</span>
+                <div className="w-40 sm:w-64 bg-slate-200 h-2 rounded-full overflow-hidden">
                   <div 
                     className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
                     style={{ width: `${progressPercent}%` }}
@@ -1161,7 +1112,7 @@ export default function TextReaderPage() {
                 <span className="font-mono text-indigo-600 font-semibold">{progressPercent}%</span>
               </div>
               
-              <div className="flex items-center gap-3 text-gray-400">
+              <div className="flex items-center gap-3 text-slate-400">
                 {engine === 'preload' && (
                   <span className="text-[11px] text-emerald-600 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
