@@ -15,7 +15,8 @@ export default function ToolLayout({
   const [lastScrollY, setLastScrollY] = useState(0);
 
   // Tools that require full-width 100% screen occupancy without max-w-7xl constraint
-  const isFullWidthTool = pathname?.startsWith('/tools/text-reader');
+  const fullWidthTools = ['/tools/text-reader', '/tools/yaml-node-editor'];
+  const isFullWidthTool = fullWidthTools.some(tool => pathname?.startsWith(tool));
 
   useEffect(() => {
     const handleScroll = () => {
