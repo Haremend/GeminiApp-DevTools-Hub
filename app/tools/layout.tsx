@@ -37,6 +37,7 @@ export default function ToolLayout({
     '/tools/text-breaker',
     '/tools/text-merger',
     '/tools/text-split',
+    '/tools/picture-append',
   ];
   const isFullWidthTool = fullWidthTools.some(tool => pathname?.startsWith(tool));
 

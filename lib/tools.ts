@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch, Volume2, Filter, Stamp, ListTree } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch, Volume2, Filter, Stamp, ListTree, LayoutGrid } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -227,6 +227,14 @@ export const tools: Tool[] = [
     category: 'Development',
     icon: ListTree,
     path: '/tools/yaml-node-editor',
+  },
+  {
+    id: 'picture-append',
+    name: 'Picture Append (图片拼接与对比)',
+    description: '多张 UI 审计与设计稿图片拼接对比工具。支持剪贴板快速粘贴、Excel 网格化槽位精确排版、单图分辨率数字微调、边缘无缝贴合与透明/纯色背景高分辨率导出。',
+    category: 'Image Processing',
+    icon: LayoutGrid,
+    path: '/tools/picture-append',
   },
 ];
 
