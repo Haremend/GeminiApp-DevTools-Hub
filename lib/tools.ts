@@ -1,4 +1,4 @@
-import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch, Volume2, Filter, Stamp, ListTree, LayoutGrid } from 'lucide-react';
+import { Palette, FileCode2, Wrench, Image as ImageIcon, QrCode, ScanLine, Shield, ImagePlus, FileText, GitMerge, WrapText, Combine, Eraser, AlignLeft, GitCompare, Layers, SplitSquareHorizontal, Link, Calculator, FileSearch, Volume2, Filter, Stamp, ListTree, LayoutGrid, Frame } from 'lucide-react';
 
 export type Category = 'Design' | 'Development' | 'QR Code' | 'Image Processing' | 'Text';
 
@@ -235,6 +235,14 @@ export const tools: Tool[] = [
     category: 'Image Processing',
     icon: LayoutGrid,
     path: '/tools/picture-append',
+  },
+  {
+    id: 'background-builder',
+    name: '背景图构建',
+    description: '多张竖屏插画/设计稿横排叠压构建宽屏背景图。支持自由拖拽定位、非破坏性裁剪、等比缩放、图层前后遮挡排序、边缘渐变羽化融合及 2K/4K/超宽屏导出。',
+    category: 'Image Processing',
+    icon: Frame,
+    path: '/tools/background-builder',
   },
 ];
 
