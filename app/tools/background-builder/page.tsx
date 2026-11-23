@@ -58,7 +58,7 @@ interface ComposerLayer {
   visible: boolean;
 }
 
-type PresetId = '1080p' | '2k' | '4k' | '21x9' | '32x9' | 'custom';
+type PresetId = '16x10' | '2k' | '4k' | '21x9' | '32x9' | 'custom';
 
 interface CanvasPreset {
   id: PresetId;
@@ -71,7 +71,7 @@ interface CanvasPreset {
 const CANVAS_PRESETS: CanvasPreset[] = [
   { id: '2k', label: '2K 壁纸', ratioLabel: '16:9', width: 2560, height: 1440 },
   { id: '4k', label: '4K 超清', ratioLabel: '16:9', width: 3840, height: 2160 },
-  { id: '1080p', label: '1080P', ratioLabel: '16:9', width: 1920, height: 1080 },
+  { id: '16x10', label: '2560×1600', ratioLabel: '16:10', width: 2560, height: 1600 },
   { id: '21x9', label: '带鱼屏', ratioLabel: '21:9', width: 3440, height: 1440 },
   { id: '32x9', label: '双屏拼接', ratioLabel: '32:9', width: 5120, height: 1440 },
 ];
@@ -95,12 +95,22 @@ type DragHandleType =
   | 'crop-bottom'
   | 'crop-left';
 
+interface LayerBounds {
+  left: number;
+  right: number;
+  centerX: number;
+  top: number;
+  bottom: number;
+  centerY: number;
+}
+
 interface DragSession {
   type: DragHandleType;
   layerId: string;
   startClientX: number;
   startClientY: number;
   initialLayer: ComposerLayer;
+  otherBounds: LayerBounds[];
 }
 
 interface SnapLine {
@@ -583,35 +593,64 @@ export default function BackgroundBuilderPage() {
         let nextX = init.x + dx;
         let nextY = init.y + dy;
         const activeSnaps: SnapLine[] = [];
-        const threshold = 10 / viewportZoom;
+        const threshold = 12 / viewportZoom;
 
         if (!e.altKey) {
-          // Horizontal snap targets
-          const xTargets = [
+          // Horizontal snap targets (canvas edges/center + other visible images' edges/center)
+          const xTargets: { target: number; linePos: number }[] = [
             { target: 0, linePos: 0 },
             { target: canvasWidth - initGeom.displayW, linePos: canvasWidth },
             { target: (canvasWidth - initGeom.displayW) / 2, linePos: canvasWidth / 2 },
           ];
-          for (const t of xTargets) {
-            if (Math.abs(nextX - t.target) <= threshold) {
-              nextX = t.target;
-              activeSnaps.push({ orientation: 'vertical', pos: t.linePos });
-              break;
-            }
+
+          for (const other of dragSession.otherBounds) {
+            // Moving left edge snaps to other left / right edge
+            xTargets.push({ target: other.left, linePos: other.left });
+            xTargets.push({ target: other.right, linePos: other.right });
+            // Moving right edge snaps to other left / right edge
+            xTargets.push({ target: other.left - initGeom.displayW, linePos: other.left });
+            xTargets.push({ target: other.right - initGeom.displayW, linePos: other.right });
+            // Center-to-center alignment
+            xTargets.push({ target: other.centerX - initGeom.displayW / 2, linePos: other.centerX });
           }
 
-          // Vertical snap targets
-          const yTargets = [
+          let bestX: { target: number; linePos: number; dist: number } | null = null;
+          for (const t of xTargets) {
+            const dist = Math.abs(nextX - t.target);
+            if (dist <= threshold && (!bestX || dist < bestX.dist)) {
+              bestX = { ...t, dist };
+            }
+          }
+          if (bestX) {
+            nextX = bestX.target;
+            activeSnaps.push({ orientation: 'vertical', pos: bestX.linePos });
+          }
+
+          // Vertical snap targets (canvas edges/center + other visible images' edges/center)
+          const yTargets: { target: number; linePos: number }[] = [
             { target: 0, linePos: 0 },
             { target: canvasHeight - initGeom.displayH, linePos: canvasHeight },
             { target: (canvasHeight - initGeom.displayH) / 2, linePos: canvasHeight / 2 },
           ];
+
+          for (const other of dragSession.otherBounds) {
+            yTargets.push({ target: other.top, linePos: other.top });
+            yTargets.push({ target: other.bottom, linePos: other.bottom });
+            yTargets.push({ target: other.top - initGeom.displayH, linePos: other.top });
+            yTargets.push({ target: other.bottom - initGeom.displayH, linePos: other.bottom });
+            yTargets.push({ target: other.centerY - initGeom.displayH / 2, linePos: other.centerY });
+          }
+
+          let bestY: { target: number; linePos: number; dist: number } | null = null;
           for (const t of yTargets) {
-            if (Math.abs(nextY - t.target) <= threshold) {
-              nextY = t.target;
-              activeSnaps.push({ orientation: 'horizontal', pos: t.linePos });
-              break;
+            const dist = Math.abs(nextY - t.target);
+            if (dist <= threshold && (!bestY || dist < bestY.dist)) {
+              bestY = { ...t, dist };
             }
+          }
+          if (bestY) {
+            nextY = bestY.target;
+            activeSnaps.push({ orientation: 'horizontal', pos: bestY.linePos });
           }
         }
 
@@ -718,6 +757,20 @@ export default function BackgroundBuilderPage() {
     if (spacePressed || e.button !== 0) return;
     e.stopPropagation();
     setSelectedLayerId(layer.id);
+    const otherBounds: LayerBounds[] = layers
+      .filter((l) => l.visible && l.id !== layer.id)
+      .map((l) => {
+        const g = getLayerGeometry(l);
+        return {
+          left: l.x,
+          right: l.x + g.displayW,
+          centerX: l.x + g.displayW / 2,
+          top: l.y,
+          bottom: l.y + g.displayH,
+          centerY: l.y + g.displayH / 2,
+        };
+      });
+
     setDragSession({
       type,
       layerId: layer.id,
@@ -728,6 +781,7 @@ export default function BackgroundBuilderPage() {
         crop: { ...layer.crop },
         feather: { ...layer.feather },
       },
+      otherBounds,
     });
   };
 
