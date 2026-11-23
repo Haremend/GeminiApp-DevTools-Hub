@@ -61,15 +61,29 @@ This document provides a detailed functional description and usage guide for eve
 **Features & Usage:**
 - **Editor:** Write markdown with a convenient formatting toolbar (Bold, Italic, Code, Link, etc.).
 - **Live Preview:** See the rendered HTML side-by-side as you type.
+### Remove Duplicates
+**Path:** `/tools/remove-duplicates`
+**Description:** Remove duplicate lines from text while preserving first occurrence order.
+**Features & Usage:**
+- **Empty Line Removal:** Toggle checkbox to strip blank lines before or after deduplication.
+- **Sorting:** Optional natural alphabetical/numeric sorting of deduplicated lines.
+- **Side-by-Side Workspace:** Full-width split input/output editors with line count indicator and one-click copy.
+
 ### Text Reader (文本阅读器)
 **Path:** `/tools/text-reader`
-**Description:** Paste text, automatically split into sentences/lines, and listen with synchronized speech, line highlighting, and seeking.
+**Description:** Paste text, automatically split into lines, and listen with synchronized speech, line highlighting, and progress seeking.
 **Features & Usage:**
-- **Text Input & Auto-split:** Paste any multi-line text, automatically split by line breaks into readable sentences.
-- **Voice & Language Selection:** Supports Chinese (zh), Japanese (ja), and English (en) with full browser voice selection.
-- **Speed & Progress Seeking:** Adjust reading speed (0.5x ~ 4.0x) and seek to any sentence with interactive slider.
-- **Font Size & Spacing Controls:** Customize text display font size (12px ~ 32px) and line spacing (4px ~ 28px) with persistent memory.
-- **Synchronized Highlighting & Auto-scroll:** Current sentence is highlighted and scrolled smoothly to center during reading.
+- **Full-Width Layout & Two-Row Toolbar:** Top row for Speed (0.5x–4.0x), Progress Seek, Font Size, and Line Spacing sliders; second row for engine mode (Smart Preload vs. System SpeechSynthesis) and voice selector.
+- **Voice & Language Support:** Supports Chinese (`zh-CN`, `zh-TW`, `zh-HK`), English (`en-US`, `en-GB`), Japanese (`ja-JP`), and Korean (`ko-KR`), plus local browser voices.
+- **Synchronized Highlighting & Auto-scroll:** Automatically preloads the next line when supported, highlights the active line, smoothly scrolls it to center, and lets you click any line to jump.
+
+### URL Deduplicator
+**Path:** `/tools/url-deduplicator`
+**Description:** Batch-extract, deduplicate, and subtract specified exclusion URLs (`A - B` set difference) from messy text.
+**Features & Usage:**
+- **Regex Extraction:** Automatically extracts valid `http://` and `https://` URLs from unstructured text.
+- **Set Difference (`A - B`):** Removes any URLs present in the exclusion panel from the source list while preserving original order.
+- **Real-Time Counts & Presets:** Displays unique URL counts for both panels and includes built-in examples for quick testing.
 
 ## 💻 Development
 
@@ -111,6 +125,15 @@ This document provides a detailed functional description and usage guide for eve
 - **Validation:** Checks if your YAML is valid.
 - **Formatting:** Cleans up indentation.
 - **Sorting:** Alphabetically sorts the keys for easier reading of large config files.
+
+### YAML Node Editor
+**Path:** `/tools/yaml-node-editor`
+**Description:** Parse YAML into an interactive visual tree with node-level editing, addition/deletion, regex key search, and export.
+**Features & Usage:**
+- **Visual Tree View:** Expand or collapse all YAML hierarchy nodes, edit keys (with duplicate key warnings) and values with automatic type parsing (String, Number, Boolean, Null).
+- **Add & Delete Nodes:** Append new properties to objects or items to arrays directly in the tree.
+- **Regex Key Search:** Search keys with regex (case-insensitive option) and jump directly to matching nodes, or batch-delete matching keys/array items.
+- **Export:** Live-generated clean YAML output with one-click copy and `export.yaml` download.
 
 ### Crypto Toolkit
 **Path:** `/tools/crypto-toolkit`
@@ -180,6 +203,33 @@ This document provides a detailed functional description and usage guide for eve
 - **Annotation:** Add text, arrows, shapes, and freehand drawings to an image.
 - **Privacy:** Use the mosaic tool to blur sensitive information.
 - **Export:** Save the edited image to your device.
+
+### Image Annotator
+**Path:** `/tools/image-annotator`
+**Description:** Quickly stamp auto-incrementing circular numbered markers onto images and export with optional bottom captions.
+**Features & Usage:**
+- **Numbered Markers:** Click anywhere on the image (upload, drag-and-drop, or `Ctrl+V`) to place numbered circular badges; drag markers to reposition, double-click to remove, and undo multiple steps.
+- **Marker & Caption Customization:** Adjust marker diameter and compose multi-line bottom notes with customizable font size, text color, alignment, and vertical spacing.
+- **Export:** Composites image, markers, and footer caption into a single downloadable PNG.
+
+### Picture Append
+**Path:** `/tools/picture-append`
+**Description:** Stitch and align multiple UI audit or design screenshots side-by-side with an Excel-style grid slot controller.
+**Features & Usage:**
+- **Clipboard & Batch Import:** Press `Ctrl+V` anywhere or drag-and-drop multiple screenshots; images snap together cleanly with 0px gap by default.
+- **Excel-Style Grid Slots:** Right sidebar displays a spreadsheet-like matrix (`A, B, C...` × `1, 2, 3...`). Click any empty cell to move the selected image there, or apply 1-click presets (Horizontal, Vertical, 2×2 Grid).
+- **Per-Image Resolution & Batch Equalize:** Fine-tune width/height in pixels (with aspect ratio lock), or batch-equalize all heights/widths for clean comparison strips.
+- **Background & Export:** Choose transparent, solid white/gray/dark, or custom hex background, toggle cell borders, and copy to clipboard or export high-resolution PNG.
+
+### Background Builder (背景图构建)
+**Path:** `/tools/background-builder`
+**Description:** Compose multiple vertical illustrations horizontally into wide desktop wallpapers with free overlap, cropping, scaling, edge feathering, and smart edge snapping.
+**Features & Usage:**
+- **Wallpaper Presets & Proportional Resize:** Supports `2K` (`2560×1440`, 16:9), `4K` (`3840×2160`, 16:9), `2560×1600` (16:10), `21:9` Ultrawide (`3440×1440`), `32:9` Dual-Screen (`5120×1440`), and custom dimensions. Existing layers and feather widths scale proportionally when switching canvas presets.
+- **Interactive Stage & Smart Edge Snapping:** Drag images freely on the canvas with magnetic snap guides to both canvas edges/center AND neighboring images' left/right/top/bottom edges (hold `Alt` to bypass snapping). Drag corner handles to scale proportionally.
+- **Non-Destructive Canvas Cropping:** Toggle "Crop Mode" to drag 4-side edge handles directly on the canvas (with ghosted preview of trimmed areas) or fine-tune percentage crop insets without altering original source pixels.
+- **Layer Stack & Edge Feathering:** Reorder layer Z-index (`Up` / `Down`) in the right sidebar to control which vertical image overlaps another, and apply independent left/right/top/bottom gradient feathering to blend seams smoothly.
+- **High-Res Export:** Offscreen canvas compositing outputs exact target resolution PNG (with optional transparency), high-quality JPG, or copies directly to clipboard.
 
 ## 📱 QR Code
 
